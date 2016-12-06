@@ -428,15 +428,15 @@ public class OperaterTest {
                     @Override
                     public Observable<?> call(Observable<? extends Throwable> errors) {
 //                        System.out.println("retryWhen--------call，observable=" + errors);
-                        return errors.zipWith(Observable.range(1, 3), new Func2<Throwable, Integer, String>() {
+                        return errors.zipWith(Observable.range(1, 3), new Func2<Throwable, Integer, Integer>() {
 
                             @Override
-                            public String call(Throwable throwable, Integer integer) {
+                            public Integer call(Throwable throwable, Integer integer) {
                                 System.out.println("retryWhen--------call，i="+integer+",throwable=" + throwable);
-                                if(integer==2){
-                                    token = "xdfdfsdfdsf";
-                                }
-                                return String.valueOf(integer);
+//                                if(integer==2){
+//                                    token = "xdfdfsdfdsf";
+//                                }
+                                return  integer;
                             }
                         });
                     }
@@ -466,6 +466,59 @@ public class OperaterTest {
  12-06 14:02:27.613 31024-31024/com.rxandroid.demo I/System.out: onNext,s=xdfdfsdfdsf
  12-06 14:02:27.613 31024-31024/com.rxandroid.demo I/System.out: onCompleted
          */
+    }
+
+    /**
+     *  发送失败时，重试3次，每次延迟5秒执行
+     */
+    public void retryWhen4() {
+
+        Observable.just(null)
+                .flatMap(new Func1<Object, Observable<String>>() {
+                    @Override
+                    public Observable<String> call(Object o) {
+                        System.out.println("--------call,o=" + o + ",token=" + token);
+                        if (token == null) {  //token为空时重试请求
+                            return Observable.<String>error(new NullPointerException("token=null"));
+                        }
+                        return Observable.just(token);
+                    }
+                })
+                .retryWhen(new Func1<Observable<? extends Throwable>, Observable<?>>() {
+                    @Override
+                    public Observable<?> call(Observable<? extends Throwable> errors) {
+//                        System.out.println("retryWhen--------call，observable=" + errors);
+                        return errors.zipWith(Observable.range(1, 3), new Func2<Throwable, Integer, Integer>() {
+
+                            @Override
+                            public Integer call(Throwable throwable, Integer integer) {
+                                System.out.println("retryWhen--------call，i=" + integer + ",throwable=" + throwable);
+                                return integer;
+                            }
+                        }).flatMap(new Func1<Integer, Observable<?>>() {
+                            @Override
+                            public Observable<?> call(Integer integer) {
+                                return Observable.timer(5,TimeUnit.SECONDS);
+                            }
+                        });
+                    }
+                })
+                .subscribe(new Subscriber<String>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("onError");
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        System.out.println("onNext,s=" + s);
+                    }
+                });
     }
 
     /**
