@@ -45,6 +45,7 @@ public class BehaviorSubjectTest {
             @Override
             public void call(Subscriber<? super String> subscriber) {
                 subject.onNext("hello"); //因为subject.subscribe(observer); 所以observer的onNext会被调用
+//                subscriber.onNext("hello");
             }
         })
                 .subscribeOn(Schedulers.io())

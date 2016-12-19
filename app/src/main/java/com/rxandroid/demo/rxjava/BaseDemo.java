@@ -4,14 +4,26 @@ package com.rxandroid.demo.rxjava;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 
 /**
- * RxJava的基本使用
- * 张全
+ * RxJava的基本使用步骤
+ * 1、创建观察者
+ * 多种创建方式：Observer、Subscriber、ActionX(部分回调监听)
+ * 2、创建被观察者
+ * Observerable的创建方式有很多种，最基本的创建方式
+ * Observable.create(Observable.OnSubscribe);
+ * 3、订阅
+ * observable.subscribe(subscriber);
+ * 一旦产生订阅，就会执行Observable.OnSubscribe.call()方法。
  */
 public class BaseDemo {
+    /**
+     * ------------------------观察者的几种创建方式-----------------------
+     */
+
     private void observer1() {
         Observer<String> observer = new Observer<String>() {
 
@@ -60,6 +72,9 @@ public class BaseDemo {
         };
     }
 
+    /**
+     * ActionX: 实现部分回调监听
+     */
     private void observer3() {
         Observable<String> observable = Observable.create(new Observable.OnSubscribe<String>() {
             @Override
@@ -67,8 +82,7 @@ public class BaseDemo {
                 subscriber.onNext("Hello");
                 subscriber.onNext("Hi");
                 subscriber.onNext("Aloha");
-                Integer.valueOf("a");// 产生异常，则自动调用subscriber的onError
-                subscriber.onCompleted(); //onCompleted是Observable发出的，如果不发出 则Subscriber无法接收
+                subscriber.onCompleted();
             }
         });
         Action1<String> onNextAction = new Action1<String>() {
@@ -100,7 +114,7 @@ public class BaseDemo {
     }
 
     /**
-     * -----------------------------------------------------------------------------------------------------------------------
+     * ------------------被观察者的基本创建方式-----------------------------------
      */
 
     private void observable1() {
@@ -113,6 +127,10 @@ public class BaseDemo {
                 subscriber.onNext("Hello");
                 subscriber.onNext("Hi");
                 subscriber.onNext("Aloha");
+
+//                 Integer.valueOf("a"); //如果产生异常，则自动回调subscriber.onError();
+//                subscriber.onError(new NullPointerException("value=null")); //手动调用onError
+
                 subscriber.onCompleted();
             }
         });
@@ -143,38 +161,12 @@ public class BaseDemo {
         // onNext("Aloha");
         // onCompleted();
     }
-
-    private void observable4() {
-
-    }
-
-    private void observable5() {
-
-    }
+    /**
+     * ------------------观察者的基本使用-----------------------------------
+     */
 
     public void test1() {
         //一、创建观察者
-        Observer<String> observer = new Observer<String>() {
-
-            @Override
-            public void onCompleted() {
-
-            }
-
-            @Override
-            public void onError(Throwable e) {
-
-            }
-
-            @Override
-            public void onNext(String s) {
-
-            }
-        };
-        /**
-         * Subscriber实现了Observer，并实现了Subscription（unsubscribe()、isUnsubscribed()）
-         * 相比Observer，增加了onStart方法，提供取消订阅方法unsubscribe().
-         */
         Subscriber<String> subscriber = new Subscriber<String>() {
             @Override
             public void onStart() {
@@ -214,36 +206,17 @@ public class BaseDemo {
             }
         });
         //create() 方法是 RxJava 最基本的创造事件序列的方法。基于这个方法， RxJava 还提供了一些方法用来快捷创建事件队列，例如：
-        /**
-         * 1、just(T...): 将传入的参数依次发送出来。
-         */
-        Observable<String> just = Observable.just("Hello", "Hi", "Aloha");
-        // 将会依次调用：
-        // onNext("Hello");
-        // onNext("Hi");
-        // onNext("Aloha");
-        // onCompleted();
-
-        /**
-         * 2、from(T[]) : 将传入的数组拆分成具体对象后，依次发送出来。
-         *  from(Iterable<? extends T>) ：将传入的 Iterable 拆分成具体对象后，依次发送出来。
-         */
-        String[] words = {"Hello", "Hi", "Aloha"};
-        Observable from = Observable.from(words);
-        // 将会依次调用：
-        // onNext("Hello");
-        // onNext("Hi");
-        // onNext("Aloha");
-        // onCompleted();
-
-        //上面 just(T...) 的例子和 from(T[]) 的例子，都和之前的 create(OnSubscribe) 的例子是等价的。
+//         Observable.just("Hello", "Hi", "Aloha");
 
         /**
          * 三、 Subscribe (订阅)
          */
-        just.subscribe(observer);
-        //或
-//        observable.subscribe(subscriber);
+        Subscription subscription = observable.subscribe(subscriber);
+
+        //取消订阅
+//        if(!subscription.isUnsubscribed()){
+//            subscription.unsubscribe();
+//        }
 
         /**
          * Observable.subscribe(Subscriber) 的内部实现是这样的（仅核心代码）：
@@ -262,35 +235,50 @@ public class BaseDemo {
          */
     }
 
-    public void test2() {
-        Observable.create(new Observable.OnSubscribe<String>() {
+    /**
+     * 除了 subscribe(Observer) 和 subscribe(Subscriber) ，subscribe() 还支持不完整定义的回调，
+     * RxJava 会自动根据定义创建出 Subscriber
+     * ActionX：X代表参数个数，比如Action1表示有一个参数
+     */
+    public void  test2(){
+        Observable<String> observable = Observable.create(new Observable.OnSubscribe<String>() {
             @Override
             public void call(Subscriber<? super String> subscriber) {
-                subscriber.onNext("hello");
-                Integer.valueOf("a"); //一旦产生异常，则自动调用subscriber.onError
-                subscriber.onNext("world");
-//                subscriber.onCompleted(); //onCompleted是由Observable选择发出的,不会主动发出
-            }
-        }).subscribe(new Subscriber<String>() {
-            @Override
-            public void onStart() {
-                System.out.println("onStart");
-            }
-
-            @Override
-            public void onCompleted() {
-                System.out.println("onCompleted");
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                System.out.println("onError---------e=" + e.getMessage());
-            }
-
-            @Override
-            public void onNext(String s) {
-                System.out.println("onNext--------s=" + s);
+                subscriber.onNext("Hello");
+                subscriber.onNext("Hi");
+                subscriber.onNext("Aloha");
+                subscriber.onCompleted();
             }
         });
+
+
+        Action1<String> onNextAction = new Action1<String>() {
+            // onNext()
+            @Override
+            public void call(String s) {
+                System.out.println("onNext,s="+s);
+            }
+        };
+        Action1<Throwable> onErrorAction = new Action1<Throwable>() {
+            // onError()
+            @Override
+            public void call(Throwable throwable) {
+                System.out.println("onError");
+            }
+        };
+        Action0 onCompletedAction = new Action0() {
+            // onCompleted()
+            @Override
+            public void call() {
+                System.out.println("onCompleted");
+            }
+        };
+
+        // 自动创建 Subscriber ，并使用 onNextAction 来定义 onNext()
+        observable.subscribe(onNextAction);
+        // 自动创建 Subscriber ，并使用 onNextAction 和 onErrorAction 来定义 onNext() 和 onError()
+        observable.subscribe(onNextAction, onErrorAction);
+        // 自动创建 Subscriber ，并使用 onNextAction、 onErrorAction 和 onCompletedAction 来定义 onNext()、 onError() 和 onCompleted()
+        observable.subscribe(onNextAction, onErrorAction, onCompletedAction);
     }
 }
