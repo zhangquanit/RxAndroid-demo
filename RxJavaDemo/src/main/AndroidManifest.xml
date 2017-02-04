@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="cn.com.chaoba.rxjavademo">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name">
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".creatingobserver.CreateAndRangeActivity"
+            android:label="@string/title_activity_create">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".creatingobserver.DeferAndJustActivity"
+            android:label="@string/title_activity_defer">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".creatingobserver.FromActivity"
+            android:label="@string/title_activity_from">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".creatingobserver.IntervalActivity"
+            android:label="@string/title_activity_interval">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".creatingobserver.RepeatAndTimerActivity"
+            android:label="@string/title_activity_repeat">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".transforming.BufferActivity"
+            android:label="@string/title_activity_buffer">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".transforming.FlatMapActivity"
+            android:label="@string/title_activity_flat_map">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".transforming.GroupbyActivity"
+            android:label="@string/title_activity_groupby">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".transforming.MapAndCastActivity"
+            android:label="@string/title_activity_map">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".transforming.ScanActivity"
+            android:label="@string/title_activity_scan">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".transforming.WindowActivity"
+            android:label="@string/title_activity_window">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".filtering.DebounceActivity"
+            android:label="@string/title_activity_debounce">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".filtering.DistinctActivity"
+            android:label="@string/title_activity_distinct">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".filtering.ElementAtAndFilterActivity"
+            android:label="@string/title_activity_element_at_and_first">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".filtering.FirstActivity"
+            android:label="@string/title_activity_first">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".filtering.SkipAndTakeActivity"
+            android:label="@string/title_activity_skip_and_take">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".filtering.SampleActivity"
+            android:label="@string/title_activity_sample">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".combining.CombineLatestActivity"
+            android:label="@string/title_activity_combine_latest">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".combining.JoinActivity"
+            android:label="@string/title_activity_combine_latest">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".combining.MergeActivity"
+            android:label="@string/title_activity_combine_latest">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".combining.StartWithAndSwitchActivity"
+            android:label="@string/title_activity_combine_latest">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".combining.ZipActivity"
+            android:label="@string/title_activity_combine_latest">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".errorhandling.OnErrorActivity"
+            android:label="@string/title_activity_catch">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".errorhandling.OnExceptionActivity"
+            android:label="@string/title_activity_catch">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".errorhandling.RetryActivity"
+            android:label="@string/title_activity_retry">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".utility.DelayActivity"
+            android:label="@string/title_activity_delay">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".utility.DoActivity"
+            android:label="@string/title_activity_do">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".utility.MeterializeActivity"
+            android:label="@string/title_activity_meterialize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".utility.SubscribeOnAndObserverOnActivity"
+            android:label="@string/title_activity_subon">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".utility.TimeIntervalTimeStampActivity"
+            android:label="@string/title_activity_time">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".utility.TimeoutActivity"
+            android:label="@string/title_activity_timeout">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".utility.UsingActivity"
+            android:label="@string/title_activity_using">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".conditional_boolean.AllAndAmbActivity"
+            android:label="@string/title_activity_all_abm">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".conditional_boolean.ContainsActivity"
+            android:label="@string/title_activity_contains">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".conditional_boolean.DefaultIfEmptyActivity"
+            android:label="@string/title_activity_defaultifempty">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".conditional_boolean.SequenceEqualActivity"
+            android:label="@string/title_activity_sequenceequal">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".conditional_boolean.SkipUntilSkipWhileActivity"
+            android:label="@string/title_activity_skip">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".conditional_boolean.TakeUntilTakeWhileActivity"
+            android:label="@string/title_activity_take">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".aggregate.ConcatAndCountActivity"
+            android:label="@string/title_activity_contact">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".aggregate.Reducectivity"
+            android:label="@string/title_activity_reduce">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".connectable.PublishAndConnectActivity"
+            android:label="@string/title_activity_publish_connect">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".connectable.RefCountActivity"
+            android:label="@string/title_activity_refcount">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".connectable.ReplayActivity"
+            android:label="@string/title_activity_replay">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".custom.CustomActivity"
+            android:label="@string/title_activity_custom">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+
+        <!--    rxbus    -->
+        <activity android:name=".others.rxbus.RxBusActivity"
+            android:label="@string/title_activity_rxbus"
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".others.rxbus.ChildActivity" />
+        <activity android:name=".others.rxbus.ChildTwoActivity" />
+
+        <!-- subscription -->
+        <activity android:name=".others.SubscriptionActivity"
+            android:label="@string/title_activity_subscription"
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="cn.com.chaoba.rxjavademo.category" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
