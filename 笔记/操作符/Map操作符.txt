@@ -1,0 +1,219 @@
+
+
+Map操作符
+ 事件对象的直接变换，是一对一的转化
+
+案例：
+    Observable.just(R.mipmap.ic_launcher) // 输入类型 Integer
+            .map(new Func1<Integer, Bitmap>() { //将Integer类型转换为Bitmap类型
+                @Override
+                public Bitmap call(Integer resId) { // 参数类型 Integer
+                    return BitmapFactory.decodeResource(ctx.getResources(), resId); // 返回类型 Bitmap
+                }
+            })
+            .subscribe(new Action1<Bitmap>() {
+                @Override
+                public void call(Bitmap bitmap) {
+
+                }
+            });
+
+执行流程：
+1、just()操作
+创建ScalarSynchronousObservable、JustOnSubscribe
+    public static <T> Observable<T> just(final T value) {
+        return ScalarSynchronousObservable.create(value);
+    }
+
+public final class ScalarSynchronousObservable<T> extends Observable<T> {
+    final T t;
+    protected ScalarSynchronousObservable(final T t) {
+        super(new JustOnSubscribe<T>(t)); //用JustOnSubscribe包装
+        this.t = t;
+    }
+    public static <T> ScalarSynchronousObservable<T> create(T t) {
+        return new ScalarSynchronousObservable<T>(t);
+    }
+
+    //
+    static final class JustOnSubscribe<T> implements OnSubscribe<T> {
+        final T value;
+
+        JustOnSubscribe(T value) {
+            this.value = value;
+        }
+
+        @Override
+        public void call(Subscriber<? super T> s) {
+            s.setProducer(createProducer(s, value));
+        }
+    }
+
+}
+
+2、map
+
+    public final <R> Observable<R> map(Func1<? super T, ? extends R> func) {
+        return lift(new OperatorMap<T, R>(func));
+    }
+    public final <R> Observable<R> lift(final Operator<? extends R, ? super T> operator) {
+         //将JustOnSubsribe、OperatorMap包装到OnSubscribeLift中
+        return new Observable<R>(new OnSubscribeLift<T, R>(onSubscribe, operator));
+    }
+
+
+
+3、subscribe
+    //执行操作
+    .subscribe(new Action1<Bitmap>() {
+        @Override
+        public void call(Bitmap bitmap) {
+        }
+    });
+
+
+ // 开始调用OnSubscribeLift.call(SafeSubsribe)
+public final class OnSubscribeLift<T, R> implements OnSubscribe<R> {
+
+    final OnSubscribe<T> parent; //just步骤生成的 JustOnSubsribe
+
+    final Operator<? extends R, ? super T> operator; //map步骤生成的 OperatorMap
+
+    public OnSubscribeLift(OnSubscribe<T> parent, Operator<? extends R, ? super T> operator) {
+        this.parent = parent;
+        this.operator = operator;
+    }
+
+    @Override
+    public void call(Subscriber<? super R> o) { //o=SafeSubsribe
+        try {
+            //调用OperatorMap.call 将subscribe()的SafeSubscriber转换为MapSubscriber
+            Subscriber<? super T> st = operator.call(o);
+            try {
+                st.onStart(); //新Subsriber的onStart
+                parent.call(st); //调用上一步生成的JustOnSubscribe.call,也是我们的数据源
+            } catch (Throwable e) {
+
+                Exceptions.throwIfFatal(e);
+                st.onError(e);
+            }
+        } catch (Throwable e) {
+            Exceptions.throwIfFatal(e);
+            o.onError(e);
+        }
+    }
+}
+
+OperatorMap.call(SafeSubsribe actual)
+public final class OperatorMap<T, R> implements Operator<R, T> {
+
+    final Func1<? super T, ? extends R> transformer;
+
+    public OperatorMap(Func1<? super T, ? extends R> transformer) {
+        this.transformer = transformer;
+    }
+    @Override
+    public Subscriber<? super T> call(final Subscriber<? super R> o) {
+        MapSubscriber<T, R> parent = new MapSubscriber<T, R>(o, transformer);
+        o.add(parent);
+        return parent;
+    }
+}
+
+JustOnSubscribe.call(MapSubscriber)
+
+    static final class JustOnSubscribe<T> implements OnSubscribe<T> {
+        final T value;
+
+        JustOnSubscribe(T value) {
+            this.value = value;
+        }
+
+        @Override
+        public void call(Subscriber<? super T> s) { //s=MapSubscriber
+            //createProducer(s, value);
+            WeakSingleProducer producer=new WeakSingleProducer(s,value);
+            s.setProducer(producer);
+        }
+    }
+
+ MapSubscriber.setProducer(WeakSingleProducer)
+         @Override
+         public void setProducer(Producer p) {
+             actual.setProducer(p); //actual= SafeSubscriber,也就是最终subscribe()时的subsriber
+         }
+
+ SafeSubscriber.setProducer(WeakSingleProducer)
+   public void setProducer(Producer p) {
+        long toRequest;
+        boolean passToSubscriber = false;
+        synchronized (this) {
+            toRequest = requested;
+            producer = p;
+            if (subscriber != null) {
+                // middle operator ... we pass through unless a request has been made
+                if (toRequest == NOT_SET) {
+                    // we pass through to the next producer as nothing has been requested
+                    passToSubscriber = true;
+                }
+            }
+        }
+
+        if (passToSubscriber) {
+           //subscriber=ActionSubscriber,因为SafeSubsriber(ActionSubsriber)
+           //如果该Subscriber包装了其他Subscriber，则要调用其他Subscriber.setProducer()
+
+            subscriber.setProducer(producer);
+
+        } else {
+
+            //开始回调 producer.request()
+
+            if (toRequest == NOT_SET) {
+                producer.request(Long.MAX_VALUE); //producer为WeakSingleProducer
+            } else {
+                producer.request(toRequest);
+            }
+        }
+    }
+
+WeakSingleProducer.request
+
+        @Override
+        public void request(long n) {
+
+
+            Subscriber<? super T> a = actual; //actual=SafeSubscriber
+
+            T v = value;
+            try {
+                a.onNext(v); // 调用MapSubscriber.onNext
+            } catch (Throwable e) {
+                Exceptions.throwOrReport(e, a, v);
+                return;
+            }
+
+            a.onCompleted(); //调用onCompleted
+        }
+
+MapSubscriber.onNext
+
+    static final class MapSubscriber<T, R> extends Subscriber<T> {
+        final Subscriber<? super R> actual;
+        final Func1<? super T, ? extends R> mapper; //map(Func1)
+        @Override
+        public void onNext(T t) {
+            R result;
+
+            try {
+                result = mapper.call(t); //调用map()的Func1函数，将T转换为R；
+            } catch (Throwable ex) {
+                Exceptions.throwIfFatal(ex);
+                unsubscribe();
+                onError(OnErrorThrowable.addValueAsLastCause(ex, t));
+                return;
+            }
+            //回调R
+            actual.onNext(result); //最终map()的SafeSubscriber.onNext(），也就会调用ActionSubsriber.onNext();
+        }
+

@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
@@ -39,8 +38,8 @@ public class OperaterTest {
      */
     public void map(final Context ctx) {
         Observable.just(R.mipmap.ic_launcher) // 输入类型 Integer
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
                 .map(new Func1<Integer, Bitmap>() { //将Integer类型转换为Bitmap类型,发生在当前线程中
                     @Override
                     public Bitmap call(Integer resId) { // 参数类型 Integer
@@ -785,7 +784,6 @@ public class OperaterTest {
                         return completed.delay(3, TimeUnit.SECONDS);
                     }
                 })
-                .repeat(3)
                 .subscribe(new Subscriber<Integer>() {
                     @Override
                     public void onCompleted() {

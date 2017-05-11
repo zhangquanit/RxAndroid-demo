@@ -18,7 +18,7 @@ import rx.schedulers.Schedulers;
  * AndroidSchedulers.mainThread()：它指定的操作将在 Android 主线程运行。
  * <p>
  * 有了这几个 Scheduler ，就可以使用 subscribeOn() 和 observeOn() 两个方法来对线程进行控制了。
- * subscribeOn(): 指定 subscribe() 所发生的线程，即 Observable.OnSubscribe 被激活时所处的线程。或者叫做事件产生的线程。
+ * subscribeOn(): 即 Observable.OnSubscribe 被激活时所处的线程。或者叫做事件产生的线程。
  * observeOn(): 指定 Subscriber 所运行在的线程。或者叫做事件消费的线程。
  *
  * @author 张全
@@ -63,54 +63,65 @@ public class SchedulerTest {
 
     /**
      * 线程之间的多次切换
-     * observeOn() 指定的是 Subscriber 的线程，而这个 Subscriber 并不是subscribe() 参数中的 Subscriber ，而是 observeOn() 执行时的当前 Observable 所对应的 Subscriber ，即它的直接下级 Subscriber 。换句话说，observeOn() 指定的是它之后的操作所在的线程。因此如果有多次切换线程的需求，只要在每个想要切换线程的位置调用一次 observeOn() 即可
+     * observeOn() 指定的是 observeOn() 执行时的当前 Observable 所对应的 Subscriber,即它的直接下级 Subscriber 。
+     * 换句话说，observeOn() 指定的是它之后的操作所在的线程。因此如果有多次切换线程的需求，
+     * 只要在每个想要切换线程的位置调用一次 observeOn() 即可
      * 通过 observeOn() 的多次调用，程序实现了线程的多次切换。
-       不过，不同于 observeOn() ， subscribeOn() 的位置放在哪里都可以，但它是只能调用一次的。
+     * 不同于 observeOn() ， subscribeOn() 的位置放在哪里都可以，但它是只能调用一次的。
      */
-    public void test2(){
+    public void test2() {
 
-        Subscriber subscriber= new Subscriber<Integer>(){
 
-            @Override
-            public void onCompleted() {
-                System.out.println("onCompleted");
-            }
+        Observable<Integer> observable = Observable.create(new Observable.OnSubscribe<Integer>() {
 
             @Override
-            public void onError(Throwable e) {
-
+            public void call(Subscriber<? super Integer> subscriber) {
+                System.out.println("OnSubscribe ..call..thread="+ Thread.currentThread().getName());
+                subscriber.onNext(1);
+                subscriber.onNext(2);
+                subscriber.onCompleted();
             }
-
-            @Override
-            public void onNext(Integer s) {
-                String threadName = Thread.currentThread().getName();
-                System.out.println(s+"->onNext----->"+threadName+",s="+s);
-            }
-        };
-
-        Observable.just(1, 2) // IO 线程，由 subscribeOn() 指定
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.newThread())
-                .map(new Func1<Integer, String>() { // 新线程，由 observeOn() 指定
+        });
+        observable
+                .subscribeOn(Schedulers.io()) //指定onSubscribe发生的线程
+                .observeOn(Schedulers.newThread()) //指定下一步操作发生的线程
+                .map(new Func1<Integer, String>() {
 
                     @Override
                     public String call(Integer integer) {
                         String threadName = Thread.currentThread().getName();
-                        System.out.println(integer+"->Schedulers.newThread()->"+threadName);
+                        System.out.println(integer + "->Schedulers.newThread()->" + threadName);
                         return String.valueOf(integer);
                     }
                 })
-                .observeOn(Schedulers.io())
+                .observeOn(Schedulers.io()) //指定下一步操作发生的线程
                 .map(new Func1<String, Integer>() { // IO 线程，由 observeOn() 指定
 
                     @Override
                     public Integer call(String s) {
                         String threadName = Thread.currentThread().getName();
-                        System.out.println(s+"->Schedulers.io()->"+threadName);
+                        System.out.println(s + "->Schedulers.io()->" + threadName);
                         return Integer.valueOf(s);
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(subscriber);  // Android 主线程，由 observeOn() 指定
+                .subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                     System.out.println("-----onError");
+                    }
+
+                    @Override
+                    public void onNext(Integer s) {
+                        String threadName = Thread.currentThread().getName();
+                        System.out.println(s + "->onNext----->" + threadName + ",s=" + s);
+                    }
+                });
     }
+
 }

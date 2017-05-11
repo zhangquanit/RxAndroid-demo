@@ -1,0 +1,170 @@
+
+http://www.jianshu.com/p/2c4799fa91a4
+
+ 一、工作场景
+ RxJava是一个观察者模式的架构，当这个架构中被观察者(Observable)和观察者(Subscriber)处在不同的线程环境中时，
+ 由于者各自的工作量不一样，导致它们产生事件和处理事件的速度不一样，这就会出现两种情况：
+
+ 1、被观察者产生事件慢一些，观察者处理事件很快。那么观察者就会等着被观察者发送事件，（好比观察者在等米下锅，程序等待，这没有问题）。
+ 2、被观察者产生事件的速度很快，而观察者处理很慢。那就出问题了，如果不作处理的话，事件会堆积起来，最终挤爆你的内存，导致程序崩溃。
+ （好比被观察者生产的大米没人吃，堆积最后就会烂掉）。
+
+二、背压(BackPressure)
+ 背压是指在异步场景中，被观察者发送事件速度远快于观察者的处理速度的情况下，一种告诉上游的被观察者降低发送速度的策略
+ 简而言之，背压是流速控制的一种策略。
+ 需要强调下：
+ 背压策略的一个前提是异步环境，也就是说，被观察者和观察者处在不同的线程环境中。它只是一种控制事件流速的策略。
+
+三、背压策略如何实现流速控制
+ 在RxJava的观察者模型中，被观察者是主动的推送数据给观察者，观察者是被动接收的。
+ 而响应式拉取则反过来，观察者主动从被观察者那里去拉取数据，而被观察者变成被动的等待通知再发送数据。
+ 参考：背压_流速控制.png
+
+ 观察者可以根据自身实际情况按需拉取数据，而不是被动接收，最终实现了上游被观察者发送事件的速度的控制，实现了背压的策略。
+
+ 代码示例：
+        Observable observable = Observable.range(1, 5);//被观察者将产生100000个事件
+        observable.observeOn(Schedulers.newThread())
+                .subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onStart() {
+                        //通知被观察者先发送一个事件
+                        request(1);
+                    }
+
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("onCompleted....");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("onError....");
+                    }
+
+                    @Override
+                    public void onNext(Integer n) {
+                     System.out.println("onNext....n="+n);
+                        //处理完毕之后，在通知被观察者发送下一个事件
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        request(1); //通知被观察者先发送下一个事件
+                    }
+                });
+
+如果你想取消这种backpressure 策略，调用quest(Long.MAX_VALUE)即可。
+
+实际上，在上面的代码中，你也可以不需要调用request(n)方法去拉取数据，程序依然能完美运行，
+这是因为range --> observeOn,这一段中间过程本身就是响应式拉取数据，observeOn这个操作符内部有一个缓冲区，
+Android环境下长度是16，它会告诉range最多发送16个事件，充满缓冲区即可。
+
+
+四、Hot and Cold Observables
+Cold Observables：指的是那些在订阅之后才开始发送事件的Observable（每个Subscriber都能接收到完整的事件）。
+Hot Observables:指的是那些在创建了Observable之后，（不管是否订阅）就开始发送事件的Observable
+
+Hot Observable这一类是不支持背压的，而是Cold Observable这一类中也有一部分并不支持背压（比如interval，timer等操作符创建的Observable）。
+Tips: 都是Observable，结果有的支持背压，有的不支持，这就是RxJava1.X的一个问题。在2.0中，这种问题已经解决了，以后谈到2.0时再细说。
+在那些不支持背压策略的操作符中使用响应式拉取数据的话，还是会抛出MissingBackpressureException。
+
+五、Producer
+
+//背压策略：允许Subscriber从Observable发起一定数量的请求，请求只会影响Subscriber.onNext()
+public interface Producer {
+    void request(long n);
+}
+
+public abstract class Subscriber<T> implements Observer<T>, Subscription {
+
+    private static final long NOT_SET = Long.MIN_VALUE;
+
+    private final SubscriptionList subscriptions;
+    private final Subscriber<?> subscriber;
+    private Producer producer;
+    private long requested = NOT_SET; //已发射次数
+
+    //请求发射n次
+    protected final void request(long n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("number requested cannot be negative: " + n);
+        }
+
+        Producer producerToRequestFrom = null;
+        synchronized (this) {
+            if (producer != null) {
+                producerToRequestFrom = producer;
+            } else {
+                addToRequested(n);
+                return;
+            }
+        }
+        // 请求producer发射n次
+        producerToRequestFrom.request(n);
+    }
+
+    //已发射次数
+    private void addToRequested(long n) {
+        if (requested == NOT_SET) {
+            requested = n; //第一次请求
+        } else {
+            final long total = requested + n; //累加
+            if (total < 0) {
+                requested = Long.MAX_VALUE;
+            } else {
+                requested = total;
+            }
+        }
+    }
+
+
+    public void setProducer(Producer p) {
+        long toRequest;
+        boolean passToSubscriber = false;
+        synchronized (this) {
+            toRequest = requested;
+            producer = p;
+            if (subscriber != null) {
+                if (toRequest == NOT_SET) {
+                    passToSubscriber = true;
+                }
+            }
+        }
+
+        if (passToSubscriber) {
+            subscriber.setProducer(producer);
+        } else {
+            if (toRequest == NOT_SET) {
+                producer.request(Long.MAX_VALUE);
+            } else {
+                producer.request(toRequest);
+            }
+        }
+    }
+  }
+
+
+六、总结
+背压是一种策略，具体措施是下游观察者通知上游的被观察者发送事件
+背压策略很好的解决了异步环境下被观察者和观察者速度不一致的问题
+在RxJava1.X中，同样是Observable，有的不支持背压策略，这在RxJava2.x上得到了解决
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

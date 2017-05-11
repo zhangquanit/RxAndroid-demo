@@ -1,0 +1,198 @@
+
+几个核心类
+Observer：观察者，负责接收结果
+     相关子类：Subscriber、SafeSubscriber、ActionSubscriber等
+Observable: 被观察者
+OnSubsribe：在call中执行逻辑，调用observer的onNext、onComplete、onError。
+
+执行流程：
+一旦调用Observerable.subscribe()，就会将观察者封装成SafeSubscriber，然后调用Observable.onSubscribe.call(safeSubscriber)；
+
+
+
+public interface Observer<T> { //观察者接口
+    void onNext(T t);
+    void onCompleted();
+    void onError(Throwable e);
+}
+
+---------------订阅者---------------------
+Observer
+    ---Subscriber
+        ---SafeSubscriber
+        ---ActionSubsriber
+
+
+public abstract class Subscriber<T> implements Observer<T>, Subscription {
+
+    private static final long NOT_SET = Long.MIN_VALUE;
+
+    private final SubscriptionList subscriptions;
+    private final Subscriber<?> subscriber;
+    private Producer producer;
+
+    private long requested = NOT_SET;
+
+    protected Subscriber() {
+        this(null, false);
+    }
+
+    protected Subscriber(Subscriber<?> subscriber) {
+        this(subscriber, true);
+    }
+
+    protected Subscriber(Subscriber<?> subscriber, boolean shareSubscriptions) {
+        this.subscriber = subscriber;
+        this.subscriptions = shareSubscriptions && subscriber != null ? subscriber.subscriptions : new SubscriptionList();
+    }
+
+    public final void add(Subscription s) {
+        subscriptions.add(s);
+    }
+
+    @Override
+    public final void unsubscribe() {
+        subscriptions.unsubscribe();
+    }
+
+    @Override
+    public final boolean isUnsubscribed() {
+        return subscriptions.isUnsubscribed();
+    }
+
+    public void onStart() {
+
+    }
+ }
+
+ public final class ActionSubscriber<T> extends Subscriber<T> {
+
+     final Action1<? super T> onNext;
+     final Action1<Throwable> onError;
+     final Action0 onCompleted;
+
+     public ActionSubscriber(Action1<? super T> onNext, Action1<Throwable> onError, Action0 onCompleted) {
+         this.onNext = onNext;
+         this.onError = onError;
+         this.onCompleted = onCompleted;
+     }
+
+     @Override
+     public void onNext(T t) {
+         onNext.call(t);
+     }
+
+     @Override
+     public void onError(Throwable e) {
+         onError.call(e);
+     }
+
+     @Override
+     public void onCompleted() {
+         onCompleted.call();
+     }
+ }
+
+ public class SafeSubscriber<T> extends Subscriber<T> {
+
+     private final Subscriber<? super T> actual;
+
+     boolean done = false;
+
+     public SafeSubscriber(Subscriber<? super T> actual) {
+         super(actual);
+         this.actual = actual;
+     }
+ }
+
+ ---------------被观察者------------------
+ Function
+     ----Action
+         ----Action0...N
+             ----OnSubscribe
+     ----Func0....N
+
+FuncX于ActionX的区别：
+  FuncX有返回值，ActionX无返回值
+
+
+ public class Observable<T> {
+
+    final OnSubscribe<T> onSubscribe;
+
+    //构造函数，只有一个，onSubscribe有很多子类，都会被包装进来
+    protected Observable(OnSubscribe<T> f) {
+        this.onSubscribe = f;
+    }
+    ------------------Observable的创建-----------------------------
+    public static <T> Observable<T> create(OnSubscribe<T> f) {
+        return new Observable<T>(hook.onCreate(f));
+    }
+    //方式1：onSubscribe的子类
+    public static <T> Observable<T> from(Iterable<? extends T> iterable) {
+        return create(new OnSubscribeFromIterable<T>(iterable));
+    }
+    //方式2：Observable的子类
+    public static <T> Observable<T> just(final T value) {
+        return ScalarSynchronousObservable.create(value);
+    }
+    -------------------事件订阅----------------------------
+    //订阅Action, 将Action封装到ActionSubscriber中，ActionSubscriber继承于Subscriber
+    public final Subscription subscribe(final Action1<? super T> onNext, final Action1<Throwable> onError, final Action0 onCompleted) {
+
+        return subscribe(new ActionSubscriber<T>(onNext, onError, onCompleted));
+    }
+    public final Subscription subscribe(Subscriber<? super T> subscriber) {
+        return Observable.subscribe(subscriber, this);
+    }
+
+    static <T> Subscription subscribe(Subscriber<? super T> subscriber, Observable<T> observable) {
+
+        subscriber.onStart(); //回调onStart
+
+        if (!(subscriber instanceof SafeSubscriber)) { //包装成SafeSubscriber
+            subscriber = new SafeSubscriber<T>(subscriber);
+        }
+
+        try {
+            // 允许hook拦截修改Observerable(Default Hook默认不做任何操作)
+            // 调用Observer.onSubscribe.call()
+            hook.onSubscribeStart(observable, observable.onSubscribe).call(subscriber);
+
+            return hook.onSubscribeReturn(subscriber);
+        } catch (Throwable e) {
+            // 抛出异常
+            Exceptions.throwIfFatal(e);
+
+           //回调onError
+            subscriber.onError(hook.onSubscribeError(e));
+
+            return Subscriptions.unsubscribed();
+        }
+    }
+
+ }
+
+
+------------------操作符 Operator
+RxJava 提供了对事件序列进行变换的支持，这是它的核心功能之一，也是大多数人说『RxJava 真是太好用了』的最大原因。
+所谓变换，就是将事件序列中的对象或整个序列进行加工处理，转换成不同的事件或事件序列。
+变换的目的：订阅者无需关心事件类型是如何产生的，被观察者会将源事件经过一系列转换，最终转换为订阅者需要的事件类型。
+
+OperatorXX：操作符
+    一般是用来包装转换Subscriber的
+OnSubscribeXX ：发射数据源，内部一般还持有一个Producer，subscriber.setProducer(producer)，回调producer.request(n)方法
+    OnSubscribeLift：
+    onSubscribeFromArray：
+
+
+
+
+
+
+
+
+
+
+
+
