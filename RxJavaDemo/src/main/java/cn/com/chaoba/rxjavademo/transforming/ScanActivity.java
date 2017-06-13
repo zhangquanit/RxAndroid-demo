@@ -47,6 +47,13 @@ public class ScanActivity extends BaseActivity {
         }).observeOn(AndroidSchedulers.mainThread());
 //        return Observable.from(list).scan((x, y) -> x * y).observeOn(AndroidSchedulers.mainThread());
     }
+//            06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 1
+//            06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 1 * 2
+//            06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 2
+//            06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 2 * 3
+//            06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 6
+//            06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 6 * 4
+//            06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 24
 
 }
 

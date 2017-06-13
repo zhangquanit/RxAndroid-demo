@@ -478,7 +478,7 @@ public class OperaterTest {
                     public Observable<String> call(Object o) {
                         System.out.println("--------call,o=" + o + ",token=" + token);
                         if (token == null) {  //token为空时重试请求
-                            return Observable.<String>error(new NullPointerException("token=null"));
+                            return Observable.error(new NullPointerException("token=null"));
                         }
                         return Observable.just(token);
                     }
@@ -502,6 +502,7 @@ public class OperaterTest {
                         });
                     }
                 })
+
                 .subscribe(new Subscriber<String>() {
                     @Override
                     public void onCompleted() {

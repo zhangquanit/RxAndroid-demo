@@ -22,7 +22,7 @@ public class BehaviorSubjectTest {
     BehaviorSubject<String> cache;
     String mCacheData;
 
-    public void test(){
+    public void test() {
         Observer<String> observer = new Observer<String>() {
             @Override
             public void onCompleted() {
@@ -40,7 +40,7 @@ public class BehaviorSubjectTest {
             }
         };
 
-        final  BehaviorSubject<String> subject = BehaviorSubject.create();
+        final BehaviorSubject<String> subject = BehaviorSubject.create();
         Observable.create(new Observable.OnSubscribe<String>() {
             @Override
             public void call(Subscriber<? super String> subscriber) {
@@ -60,6 +60,7 @@ public class BehaviorSubjectTest {
         //subject作为被观察者,一旦subject.onNext()被调用，则转调observer.onNext()
         subject.subscribe(observer);
     }
+
     public void getData() {
         Observer<String> observer = new Observer<String>() {
             @Override
@@ -82,20 +83,20 @@ public class BehaviorSubjectTest {
 
     private Subscription loadData(Observer<String> observer) {
 //        if (cache == null) {
-            cache = BehaviorSubject.create();
-            Observable.create(new Observable.OnSubscribe<String>() {
-                @Override
-                public void call(Subscriber<? super String> subscriber) {
-                    System.out.println("call------mCacheData="+mCacheData);
-                    if (mCacheData == null) {
-                        loadFromNetwork();
-                    } else {
-                        subscriber.onNext(mCacheData);
-                    }
+        cache = BehaviorSubject.create();
+        Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                System.out.println("call------mCacheData=" + mCacheData);
+                if (mCacheData == null) {
+                    loadFromNetwork();
+                } else {
+                    subscriber.onNext(mCacheData);
                 }
-            })
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(cache);
+            }
+        })
+                .subscribeOn(Schedulers.io())
+                .subscribe(cache);
 //        }
         return cache.observeOn(AndroidSchedulers.mainThread()).subscribe(observer);
     }
@@ -130,4 +131,95 @@ public class BehaviorSubjectTest {
                 });
     }
 
+    /**
+     * 作为被观察者
+     */
+    public void asObservable() {
+        Subscriber<Object> observer = new Subscriber<Object>() {
+
+            @Override
+            public void onCompleted() {
+                System.out.println("------onCompleted");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println("------onError");
+            }
+
+            @Override
+            public void onNext(Object s) {
+                System.out.println("------onNext,s=" + s);
+            }
+        };
+        // observer will receive all events.
+        BehaviorSubject<String> subject = BehaviorSubject.create("default");
+        subject.subscribe(observer);
+        subject.onNext("one");
+        subject.onNext("two");
+        subject.onNext("three");
+        System.out.println("############");
+
+        // observer will receive the "one", "two" and "three" events, but not "zero"
+        subject = BehaviorSubject.create("default");
+        subject.onNext("zero");
+        subject.onNext("one");
+        subject.subscribe(observer);
+        subject.onNext("two");
+        subject.onNext("three");
+        System.out.println("############");
+
+        // observer will receive only onCompleted
+        subject = BehaviorSubject.create("default");
+        subject.onNext("zero");
+        subject.onNext("one");
+        subject.onCompleted();
+        subject.subscribe(observer);
+        System.out.println("############");
+
+        // observer will receive only onError
+        subject = BehaviorSubject.create("default");
+        subject.onNext("zero");
+        subject.onNext("one");
+        subject.onError(new RuntimeException("error"));
+        subject.subscribe(observer);
+
+    }
+
+    public void asObserver() {
+        BehaviorSubject<String> subject = BehaviorSubject.create();
+
+        Observable<String> observable = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                subscriber.onNext("one");
+                subscriber.onNext("two");
+                subscriber.onCompleted();
+            }
+        });
+
+        //被观察者
+        subject.subscribe(new Subscriber<String>() {
+            @Override
+            public void onCompleted() {
+                System.out.println("----onCompleted");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println("----onError");
+            }
+
+            @Override
+            public void onNext(String s) {
+                System.out.println("----onNext，s="+s);
+            }
+        });
+
+        //观察者
+        observable.subscribe(subject);
+    }
+
 }
+
+

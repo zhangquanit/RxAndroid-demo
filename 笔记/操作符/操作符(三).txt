@@ -1,0 +1,361 @@
+
+三、Filting 过滤操作符
+
+1、throttleWithTimeout（long timeout, TimeUnit unit）
+发射间隔小于timeout的数据会被过滤掉
+        Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                for (int i = 0; i < 10; i++) {
+                    if (!subscriber.isUnsubscribed()) {
+                        subscriber.onNext(i);
+                    }
+                    int sleep = 100;
+                    if (i % 3 == 0) { // 3的倍数时休眠300毫秒
+                        sleep = 300;
+                    }
+                    try {
+                        Thread.sleep(sleep);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                subscriber.onCompleted();
+            }
+        }).subscribeOn(Schedulers.computation())
+                .throttleWithTimeout(200, TimeUnit.MILLISECONDS) //发射间隔小于200毫秒的数据会被过滤掉
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+// 发射间隔小于200毫秒的数据会被过滤掉，因此只会打印0，3，6，9
+
+2、debounce
+debounce(long timeout, TimeUnit unit)
+使用时间来进行过滤，这时它跟throttleWithTimeOut使用起来是一样
+
+debounce(func1)
+根据一个函数来进行限流。这个函数的返回值是一个临时Observable，如果源Observable在发射一个新的数据的时候，
+上一个数据根据函数所生成的临时Observable还没有结束，那么上一个数据就会被过滤掉。
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                .debounce(new Func1<Integer, Observable<Integer>>() {
+                    @Override
+                    public Observable<Integer> call(final Integer integer) {
+                        System.out.println("call  "+integer);
+                        return Observable.create(new Observable.OnSubscribe<Integer>() {
+                            @Override
+                            public void call(Subscriber<? super Integer> subscriber) {
+                                /*
+                                  *生成一个Observable并使用debounce对其进行过滤，只有发射来的数据为偶数的时候才会调用onCompleted方法
+                                  *来表示这个临时的Observable已经终止。因此只过滤偶数，奇数会被丢弃
+                                 */
+                                if (integer % 2 == 0 && !subscriber.isUnsubscribed()) {
+                                    System.out.println("complete:" + integer);
+                                    subscriber.onCompleted();
+                                }
+                            }
+                        });
+                    }
+                }).observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+
+// 输出结果 ： 2，4，6，8，9
+
+3、distinct
+distinct操作符的用处就是用来去重。
+        Observable.just(1, 2, 3, 4, 5, 4, 3, 2, 1).distinct()
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+去重后输出结果：1，2，3，4，5
+
+还有一个操作符distinctUntilChanged,是用来过滤掉连续的重复数据。
+        Observable.just(1, 2, 3, 3, 3, 1, 2, 3, 3).distinctUntilChanged()
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+输出结果：1，2，3，1，2，3
+
+4、elementAt(index)
+ElementAt只会返回指定位置的数据
+      Observable.just(1,2,3,4)
+              .elementAt(2)
+              .subscribe(new Action1<Integer>() {
+                  @Override
+                  public void call(Integer integer) {
+                      System.out.println(integer);
+                  }
+              });
+返回index=2的数据  结果为3
+5、filter
+Filter只会返回满足过滤条件的数据
+      Observable.just(1,2,3,4)
+             .filter(new Func1<Integer, Boolean>() {
+                 @Override
+                 public Boolean call(Integer integer) {
+                     if(integer>3){
+                         return true;
+                     }
+                     return false;
+                 }
+             })
+              .subscribe(new Action1<Integer>() {
+                  @Override
+                  public void call(Integer integer) {
+                      System.out.println(integer);
+                  }
+              });
+只返回>3的数据
+
+6、First、last
+first()返回第一条数据
+      Observable.just(1,2,3,4,5)
+             .first()
+              .subscribe(new Action1<Integer>() {
+                  @Override
+                  public void call(Integer integer) {
+                      System.out.println(integer);
+                  }
+              });
+直接返回第1条数据，结果为1
+
+first(Func1)
+返回满足条件的第一条数据。
+      Observable.just(1,2,3,4,5)
+             .first(new Func1<Integer, Boolean>() {
+                 @Override
+                 public Boolean call(Integer integer) {
+                     return integer>3;
+                 }
+             })
+              .subscribe(new Action1<Integer>() {
+                  @Override
+                  public void call(Integer integer) {
+                      System.out.println(integer);
+                  }
+              });
+返回第一个 >3 的数据，结果为4
+
+last()返回最后一条数据
+last(Func1)返回满足条件的最后一条数据
+      Observable.just(1,2,3,4,5)
+             .last(new Func1<Integer, Boolean>() {
+                 @Override
+                 public Boolean call(Integer integer) {
+                     return integer>3;
+                 }
+             })
+              .subscribe(new Action1<Integer>() {
+                  @Override
+                  public void call(Integer integer) {
+                      System.out.println(integer);
+                  }
+              });
+返回最后一个>3的数据  结果为5
+
+BlockingObservable
+这个方法不会对Observable做任何处理，只会阻塞住，当满足条件的数据发射出来的时候才会返回一个BlockingObservable对象。
+可以使用Observable.toBlocking或者BlockingObservable.from方法来将一个Observable对象转化为BlockingObservable对象。
+BlockingObservable可以和first操作符进行配合使用。
+        BlockingObservable<Integer> observerable = Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                for (int i = 0; i < 5; i++) {
+                    System.out.println("i="+i);
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if (!subscriber.isUnsubscribed()) {
+                        System.out.println("onNext:" + i);
+                        subscriber.onNext(i);
+                    }
+                }
+                if (!subscriber.isUnsubscribed()) {
+                    subscriber.onCompleted();
+                }
+            }
+        }).toBlocking();
+        //在返回满足条件的数据前 将处于阻塞状态
+        Integer first = observerable.first(new Func1<Integer, Boolean>() {
+            @Override
+            public Boolean call(Integer integer) {
+                return integer > 2;
+            }
+        });
+        System.out.println(first);
+
+当发射第一个>2的数据3的时候（满足条件后）才会返回，否则会一直阻塞。
+注意：如果不满足条件，则会一直阻塞在那里
+
+7、Skip、Take
+skip(n)操作符将源Observable发射的数据过滤掉前n项
+        Observable.just(0, 1, 2, 3, 4, 5)
+                .skip(3)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+过滤掉前3项后，结果为3，4，5
+
+skipLast(n)操作符将源Observable发射的数据过滤掉最后n项
+        Observable.just(0, 1, 2, 3, 4, 5)
+                .skipLast(3)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+过滤掉最后3项后，结果为0，1，2
+
+take
+take(n)操作符则只取前n项
+        Observable.just(0, 1, 2, 3, 4, 5)
+                .take(3)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+只取前3项，结果为0，1，2
+
+takeLast(n)
+只取最后n项
+        Observable.just(0, 1, 2, 3, 4, 5)
+                .takeLast(3)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+只取最后3项，结果为3，4，5
+
+8、Sample、ThrottleFirst
+
+sample(long time, TimeUnit unit)
+Sample操作符会定时地发射源Observable最近发射的数据，其他的都会被过滤掉，等效于ThrottleLast操作符
+当达到time的时候发射源Observable最近发射的数据
+        Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                for (int i = 0; i < 20; i++) {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    subscriber.onNext(i);
+                }
+                subscriber.onCompleted();
+            }
+        })
+                .sample(1000, TimeUnit.MILLISECONDS)
+//              .throttleLast(1000,TimeUnit.MILLISECONDS)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+每隔1000毫秒，发射源Observable这段时间内最近发射的数据.
+
+
+throttleFirst(long time, TimeUnit unit)
+每隔time时间发射这个时间段内源Observable发射的第一个数据，可用于过滤重复点击
+        Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                for (int i = 0; i < 20; i++) {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    subscriber.onNext(i);
+                }
+                subscriber.onCompleted();
+            }
+        })
+        .throttleFirst(1000, TimeUnit.MILLISECONDS)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+每隔1000毫秒发射这个时间段内源Observable发射的第一条数据
+输出结果0，5，10，15
+
+原理分析
+        @Override
+        public void onNext(T v) {
+            long now = scheduler.now();
+            //第1条数据 或者时间间隔>设定的时间间隔
+            if (lastOnNext == 0 || now - lastOnNext >= timeInMilliseconds) {
+                lastOnNext = now;
+                subscriber.onNext(v);
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

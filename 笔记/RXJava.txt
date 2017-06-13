@@ -112,7 +112,7 @@ public abstract class Subscriber<T> implements Observer<T>, Subscription {
              ----OnSubscribe
      ----Func0....N
 
-FuncX于ActionX的区别：
+FuncX与ActionX的区别：
   FuncX有返回值，ActionX无返回值
 
 
@@ -178,6 +178,8 @@ FuncX于ActionX的区别：
 RxJava 提供了对事件序列进行变换的支持，这是它的核心功能之一，也是大多数人说『RxJava 真是太好用了』的最大原因。
 所谓变换，就是将事件序列中的对象或整个序列进行加工处理，转换成不同的事件或事件序列。
 变换的目的：订阅者无需关心事件类型是如何产生的，被观察者会将源事件经过一系列转换，最终转换为订阅者需要的事件类型。
+
+http://blog.chinaunix.net/uid-20771867-id-5187376.html
 
 OperatorXX：操作符
     一般是用来包装转换Subscriber的

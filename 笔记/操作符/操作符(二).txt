@@ -1,0 +1,152 @@
+
+二、Transforming Observables  转化操作符
+1、buffer
+Buffer操作符所要做的事情就是将数据安装规定的大小做一下缓存，然后将缓存的数据作为一个集合发射出去。
+buffer(int count)
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9).buffer(2)
+                .subscribe(new Action1<List<Integer>>() {
+                    @Override
+                    public void call(List<Integer> integers) {
+                        System.out.println(integers);
+                    }
+                });
+每收集到2个数据后就发射出去，[1,2][3,4][5,6][7,8][9]
+
+buffer(int count, int skip)
+每跳过skip个数据就发射一个包含count个数据的集合
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9).buffer(1,2)
+                .subscribe(new Action1<List<Integer>>() {
+                    @Override
+                    public void call(List<Integer> integers) {
+                        System.out.println(integers);
+                    }
+                });
+每2个数据就发射一个包含1个数据的集合
+[1] [3] [5] [7] [9]
+如果count==skip的话，我们就会发现其等效于buffer(count)
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9).buffer(2,2)
+                .subscribe(new Action1<List<Integer>>() {
+                    @Override
+                    public void call(List<Integer> integers) {
+                        System.out.println(integers);
+                    }
+                });
+每2个数据就发射一个包含2个数据的集合，相当于每收集到2个数据就发射出去
+[1,2][3,4][5,6][7,8][9]
+
+2、flatMap、flatMapIterable
+将源数据转换为Observable发射出去,需要注意的是最后的顺序可能会交错地发射出来，如果对顺序有严格的要求的话可以使用concatmap操作符
+      Observable.just(1)
+              .flatMap(new Func1<Integer, Observable<String>>() {
+                  @Override
+                  public Observable<String> call(Integer integer) {
+                      return Observable.just(String.valueOf(integer));
+                  }
+              }).subscribe(new Action1<String>() {
+          @Override
+          public void call(String o) {
+           System.out.println(o);
+          }
+      });
+
+flatMapIterable
+将每一个源数据转换为一个Iterable迭代器发射出去
+        Observable.just(1)
+                .flatMapIterable(new Func1<Integer, Iterable<Integer>>() {
+                    @Override
+                    public Iterable<Integer> call(Integer integer) {
+                        ArrayList<Integer> list = new ArrayList<>();
+                        list.add(1);
+                        list.add(2);
+                        list.add(3);
+                        return list;
+                    }
+                })
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+发射源数据1，经过flatMapIterable转换为List发射出来，打印1，2，3
+
+
+3、map、cast
+map操作符的功能类似于FlatMap，不同之处在于它对数据的转化是直接进行的，而FlatMap需要通过一些中间的Observables来进行。
+cast将Observable发射的数据强制转化为另外一种类型，属于Map的一种具体的实现
+        Observable.just(1)
+                .cast(Number.class)
+                .subscribe(new Action1<Number>() {
+                    @Override
+                    public void call(Number s) {
+                        System.out.println(s);
+                    }
+                });
+将Integer转换为Number类型
+
+4、scan
+scan操作符对一个序列的数据应用一个函数，并将这个函数的结果发射出去作为下个数据应用这个函数时候的第一个参数使用，有点类似于递归操作
+        Observable.just(1, 2, 3, 4).scan(new Func2<Integer, Integer, Integer>() {
+            @Override
+            public Integer call(Integer integer, Integer integer2) {
+                System.out.println(integer + " * " + integer2);
+                return integer * integer2;
+            }
+        }).subscribe(new Action1<Integer>() {
+            @Override
+            public void call(Integer integer) {
+                System.out.println(integer);
+            }
+        });
+1 2 6 24
+06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 1
+06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 1 * 2
+06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 2
+06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 2 * 3
+06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 6
+06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 6 * 4
+06-01 13:28:28.962 5771-5771/com.rxandroid.demo I/System.out: 24
+
+5、window
+window同buffer类似，不同之处在于window发射的是一些小的Observable对象
+       Observable.just(1,2,3,4,5,6,7,8,9)
+               .window(3)
+               .subscribe(new Action1<Observable<Integer>>() {
+                   @Override
+                   public void call(Observable<Integer> integerObservable) {
+                       System.out.println("----------");
+                       integerObservable.subscribe(new Action1<Integer>() {
+                           @Override
+                           public void call(Integer integer) {
+                               System.out.println(integer);
+                           }
+                       });
+                   }
+               });
+缓每次发射一个包含3个数据的小Obserable。而buffer是发射一个包含数据的集合，不是小Observable
+
+也可以按时间规则进行分组
+    Observable.interval(1, TimeUnit.SECONDS)
+            .window(3,TimeUnit.SECONDS)
+            .subscribe(new Action1<Observable<Long>>() {
+                @Override
+                public void call(Observable<Long> longObservable) {
+                    System.out.println("-------");
+                    longObservable.subscribe(new Action1<Long>() {
+                        @Override
+                        public void call(Long aLong) {
+                            System.out.println(aLong);
+                        }
+                    });
+                }
+            });
+每隔3秒发射出一个包含2~4个数字的Observable对象
+
+
+
+
+
+
+
+
+

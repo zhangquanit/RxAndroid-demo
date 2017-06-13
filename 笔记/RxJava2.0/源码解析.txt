@@ -1,0 +1,238 @@
+
+public interface ObservableSource<T> {
+    void subscribe(Observer<? super T> observer);
+}
+
+public interface ObservableOnSubscribe<T> {
+
+    void subscribe(ObservableEmitter<T> e) throws Exception;
+}
+
+public abstract class Observable<T> implements ObservableSource<T> {
+
+    public static <T> Observable<T> create(ObservableOnSubscribe<T> source) {
+        return RxJavaPlugins.onAssembly(new ObservableCreate<T>(source));
+    }
+    public static <T> Observable<T> onAssembly(Observable<T> source) {
+        Function<Observable, Observable> f = onObservableAssembly;
+        if (f != null) {
+            //hook 实现
+            return apply(f, source);
+        }
+        return source;
+    }
+    //订阅
+    @SchedulerSupport(SchedulerSupport.NONE)
+    public final Disposable subscribe(Consumer<? super T> onNext) {
+        return subscribe(onNext, Functions.ERROR_CONSUMER, Functions.EMPTY_ACTION, Functions.emptyConsumer());
+    }
+
+    @SchedulerSupport(SchedulerSupport.NONE)
+    public final Disposable subscribe(Consumer<? super T> onNext, Consumer<? super Throwable> onError,
+            Action onComplete, Consumer<? super Disposable> onSubscribe) {
+
+        //封装成LambdaObserver(类似1.X的ActionSubscriber)
+        LambdaObserver<T> ls = new LambdaObserver<T>(onNext, onError, onComplete, onSubscribe);
+        subscribe(ls);
+        return ls;
+    }
+
+    @SchedulerSupport(SchedulerSupport.NONE)
+    @Override
+    public final void subscribe(Observer<? super T> observer) {
+
+        try {
+            //hook实现
+            observer = RxJavaPlugins.onSubscribe(this, observer);
+
+            //发射数据，类似Rxjava1.x的OnSubscribe.call()
+            subscribeActual(observer);
+
+        } catch (NullPointerException e) {
+            throw e;
+        } catch (Throwable e) {
+            Exceptions.throwIfFatal(e);
+            // can't call onError because no way to know if a Disposable has been set or not
+            // can't call onSubscribe because the call might have set a Subscription already
+            RxJavaPlugins.onError(e);
+
+            NullPointerException npe = new NullPointerException("Actually not, but can't throw other exceptions due to RS");
+            npe.initCause(e);
+            throw npe;
+        }
+    }
+
+    protected abstract void subscribeActual(Observer<? super T> observer);
+}
+
+
+// 类似 Rxjava1.x 的ActionSubsriber
+public final class LambdaObserver<T> extends AtomicReference<Disposable> implements Observer<T>, Disposable {
+    final Consumer<? super T> onNext;
+    final Consumer<? super Throwable> onError;
+    final Action onComplete;
+    final Consumer<? super Disposable> onSubscribe;
+
+    public LambdaObserver(Consumer<? super T> onNext, Consumer<? super Throwable> onError,
+            Action onComplete,
+            Consumer<? super Disposable> onSubscribe) {
+        super();
+        this.onNext = onNext;
+        this.onError = onError;
+        this.onComplete = onComplete;
+        this.onSubscribe = onSubscribe;
+    }
+
+}
+
+//实际的Observable
+public final class ObservableCreate<T> extends Observable<T> {
+    final ObservableOnSubscribe<T> source; //事件源
+
+    public ObservableCreate(ObservableOnSubscribe<T> source) {
+        this.source = source;
+    }
+
+    @Override
+    protected void subscribeActual(Observer<? super T> observer) { //observer匿名内部类或LambdaObserver
+
+        CreateEmitter<T> parent = new CreateEmitter<T>(observer);
+        observer.onSubscribe(parent);  //类似Rxjava1.x的onStart
+
+        try {
+            source.subscribe(parent); //发射数据
+        } catch (Throwable ex) {
+            Exceptions.throwIfFatal(ex);
+            parent.onError(ex); //捕获异常 调用onError
+        }
+    }
+
+    static final class CreateEmitter<T>
+    extends AtomicReference<Disposable>
+    implements ObservableEmitter<T>, Disposable {
+
+        private static final long serialVersionUID = -3434801548987643227L;
+        final Observer<? super T> observer;
+
+        CreateEmitter(Observer<? super T> observer) {
+            this.observer = observer;
+        }
+
+        @Override
+        public void onNext(T t) {
+            if (t == null) {
+                onError(new NullPointerException("onNext called with null. Null values are generally not allowed in 2.x operators and sources."));
+                return;
+            }
+            if (!isDisposed()) {
+                observer.onNext(t);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            if (t == null) {
+                t = new NullPointerException("onError called with null. Null values are generally not allowed in 2.x operators and sources.");
+            }
+            if (!isDisposed()) {
+                try {
+                    observer.onError(t);
+                } finally {
+                    dispose(); //注销
+                }
+            } else {
+                RxJavaPlugins.onError(t);
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            if (!isDisposed()) {
+                try {
+                    observer.onComplete();
+                } finally {
+                    dispose(); //注销
+                }
+            }
+        }
+
+        @Override
+        public void setDisposable(Disposable d) {
+            DisposableHelper.set(this, d);
+        }
+
+        @Override
+        public void setCancellable(Cancellable c) {
+            setDisposable(new CancellableDisposable(c));
+        }
+
+        @Override
+        public ObservableEmitter<T> serialize() {
+            return new SerializedEmitter<T>(this);
+        }
+
+        @Override
+        public void dispose() {
+            DisposableHelper.dispose(this);
+        }
+
+        @Override
+        public boolean isDisposed() {
+            return DisposableHelper.isDisposed(get());
+        }
+    }
+ }
+
+注意：
+关于Observer的回调
+onSubscribe() 开始发射数据，类似RxJava1.x的onStart
+onNext() 发射数据
+onComplete()  发射完毕，一旦发射完毕，自动注销订阅(调用dispose()),调用多次无影响，因为第一次调用已经取消订阅了
+onError() 发射错误，默认会捕获subscribe异常，也可以手动调用，一旦调用自动注销订阅，重复调用程序会抛出异常
+        try {
+            source.subscribe(parent);
+        } catch (Throwable ex) {
+            Exceptions.throwIfFatal(ex);
+            parent.onError(ex); //捕获异常，并调用onError
+        }
+
+       if (!isDisposed()) { //如果没有注销订阅  则回调异常
+           try {
+               observer.onError(t);
+           } finally {
+               dispose(); //注销订阅
+           }
+       } else {
+           RxJavaPlugins.onError(t);
+       }
+
+ -----------RxJavaPlugins.java
+    public static void onError(Throwable error) {
+            ..........
+        error.printStackTrace(); // 打印异常
+        uncaught(error); //抛出异常
+    }
+
+    static void uncaught(Throwable error) {
+        Thread currentThread = Thread.currentThread();
+        UncaughtExceptionHandler handler = currentThread.getUncaughtExceptionHandler();
+        handler.uncaughtException(currentThread, error);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

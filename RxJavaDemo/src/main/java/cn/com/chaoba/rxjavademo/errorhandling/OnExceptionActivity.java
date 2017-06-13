@@ -47,6 +47,11 @@ public class OnExceptionActivity extends BaseActivity {
         }));
     }
 
+    /**
+     * onExceptionResumeNext(newObserable)
+     * 当Observable出现subcriber.onError(Exception e)时 执行newObservable，回调subscriber.onNext
+     * 注意: 只有出现Exception或Exception子类时，才会触发
+     */
     private Observable<String> onExceptionResumeObserver(boolean isException) {
         return createObserver(isException).onExceptionResumeNext(Observable.just("7", "8", "9"));
     }

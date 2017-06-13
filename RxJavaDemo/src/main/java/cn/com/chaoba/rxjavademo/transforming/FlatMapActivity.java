@@ -55,12 +55,22 @@ public class FlatMapActivity extends BaseActivity {
 
     /**
      * flatMap()：FlatMap通过一些中间的Observables来转换数据
+     * 需要注意的是最后的顺序可能会交错地发射出来，如果对顺序有严格的要求的话可以使用concatmap操作符
      */
     private Observable<String> flatMapObserver() {
         return Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9).flatMap(new Func1<Integer, Observable<String>>() {
             @Override
             public Observable<String> call(Integer integer) {
                 return Observable.just("flat map:" + integer);
+            }
+        });
+    }
+
+    private  Observable<String> contactMapObserver(){
+        return Observable.just(1,2,3,4,5,6,7,8,9).concatMap(new Func1<Integer, Observable<? extends String>>() {
+            @Override
+            public Observable<? extends String> call(Integer integer) {
+                return Observable.just("flat map:"+integer);
             }
         });
     }

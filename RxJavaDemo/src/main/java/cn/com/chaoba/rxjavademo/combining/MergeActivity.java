@@ -34,6 +34,10 @@ public class MergeActivity extends BaseActivity {
         }));
     }
 
+    /**
+     * merge
+     * 同时执行多个Observable，并将数据发射给订阅者
+     */
     private Observable<Integer> mergeObserver() {
         return Observable.merge(Observable.just(1, 2, 3), Observable.just(4, 5, 6));
     }

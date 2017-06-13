@@ -16,11 +16,19 @@ public class DistinctActivity extends BaseActivity {
         mRButton.setOnClickListener(e -> distinctUntilChangedObserver().subscribe(i -> log("UntilChanged:" + i)));
     }
 
+    /**
+     * 去重
+     * @return
+     */
     private Observable<Integer> distinctObserver() {
         return Observable.just(1, 2, 3, 4, 5, 4, 3, 2, 1).distinct();
 
     }
 
+    /**
+     * 过滤掉连续的重复数据
+     * @return
+     */
     private Observable<Integer> distinctUntilChangedObserver() {
         return Observable.just(1, 2, 3, 3, 3, 1, 2, 3, 3).distinctUntilChanged();
 

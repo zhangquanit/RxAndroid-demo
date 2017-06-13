@@ -1,0 +1,146 @@
+一、create
+1、create
+2、range(n,m)
+从n开始发射m个值，比如range(10,5) 会依次发射10，11，12，13，14
+3、defer
+Defer操作符只有当有Subscriber来订阅的时候才会创建一个新的Observable对象,也就是说每次订阅都会得到一个刚创建的最新的Observable对象，
+这可以确保Observable对象里的数据是最新的
+    Observable.defer(new Func0<Observable<Long>>() {
+            @Override
+            public Observable<Long> call() {
+                return Observable.just(System.currentTimeMillis());
+            }
+        })
+         .subsribe(subsriber);
+
+4、just
+just操作符将某个对象转化为Observable对象，并且将其发射出去，可以使一个数字、一个字符串、数组、Iterate对象等
+    Observable.just(new Integer[]{1,2,3})
+           .subscribe(new Action1<Integer[]>() {
+               @Override
+               public void call(Integer[] integers) {
+                   System.out.println(integers);
+               }
+           });
+将Integer数组整个发射出去
+对于可变参数，内部会将参数封装成数组，调用from(T[]),等价于调用from
+    Observable.just(1,2)
+            .subscribe(new Action1<Integer>() {
+                @Override
+                public void call(Integer integer) {
+
+                }
+            });
+
+5、from
+from操作符用来将某个对象转化为Observable对象，并且依次将其内容发射出去。这个类似于just，但是just会将这个对象整个发射出去。
+比如说一个含有10个数字的数组，使用from就会发射10次，每次发射一个数字，而使用just会发射一次来将整个的数组发射出去。
+      Observable.from(new Integer[]{1,2,3})
+              .subscribe(new Action1<Integer>() {
+
+                  @Override
+                  public void call(Integer integer) {
+                      System.out.println(integer);
+                  }
+              });
+依次发射数组中的1，2，3
+6、interval
+interval(long initialDelay, long period, TimeUnit unit)
+Interval所创建的Observable对象会从0开始，每隔固定的时间发射一个数字。需要注意的是这个对象是运行在computation Scheduler,
+所以如果需要在view中显示结果，要在主线程中订阅。
+        Observable.interval(1,1, TimeUnit.SECONDS)
+                .doOnNext(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        //运行所在线程 RxComputationScheduler-1
+                        System.out.println(Thread.currentThread().getName());
+                    }
+                }).subscribe(new Action1<Long>() {
+            @Override
+            public void call(Long aLong) {
+                System.out.println(aLong);
+            }
+        });
+延迟1秒开始，每隔一秒发送一次数字，数字从0开始...
+
+7、repeat
+repeat会将一个Observable对象重复发射，我们可以指定其发射的次数
+repeat()无限重复
+repeat(count)重复count次
+
+       Observable.just(1)
+                .repeat(3, Schedulers.io()) //在io线程中重复发射3次
+                .subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("onError");
+                    }
+
+                    @Override
+                    public void onNext(Integer integer) {
+                        String threadName = Thread.currentThread().getName();
+                        log(threadName + ",onNext: " + integer);
+                    }
+                });
+
+repeat 和retry的比较：
+当.repeat()接收到.onCompleted()事件后触发重订阅。
+当.retry()接收到.onError()事件后触发重订阅。
+
+
+8、timer、delay
+timer会在指定时间后发射一个数字0，注意其也是运行在computation Scheduler
+        Observable.timer(1, TimeUnit.SECONDS)
+                .doOnNext(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        //RxComputationScheduler-1
+                        System.out.println(Thread.currentThread().getName());
+                    }
+                })
+                .subscribe(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        System.out.println(aLong);
+                    }
+                });
+
+delay
+与timer类似，也是在指定时间后发射，注意其也是运行在computation Scheduler
+        Observable.just(1)
+                .delay(1,TimeUnit.SECONDS) //延迟1秒发射
+                .doOnNext(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        //RxComputationScheduler-1
+                        System.out.println(Thread.currentThread().getName());
+                    }
+                })
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

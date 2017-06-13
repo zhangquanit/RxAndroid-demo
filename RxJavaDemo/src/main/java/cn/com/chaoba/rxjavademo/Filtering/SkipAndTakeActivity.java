@@ -16,9 +16,18 @@ public class SkipAndTakeActivity extends BaseActivity {
         mRButton.setOnClickListener(e -> takeObserver().subscribe(i -> log("Take:" + i)));
     }
 
+    /**
+     * skip(n) 过滤掉前n项，skipLast(n) 过滤掉最后n项
+     */
     private Observable<Integer> skipObserver() {
         return Observable.just(0, 1, 2, 3, 4, 5).skip(2);
     }
+
+    /**
+     * take(n)取前n项
+     * takeLast(n) 只取最后n项
+     * @return
+     */
     private Observable<Integer> takeObserver() {
         return Observable.just(0, 1, 2, 3, 4, 5).take(2);
     }

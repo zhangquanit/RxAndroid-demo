@@ -7,6 +7,8 @@ import java.util.concurrent.TimeUnit;
 import cn.com.chaoba.rxjavademo.BaseActivity;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 public class JoinActivity extends BaseActivity {
@@ -38,6 +40,7 @@ public class JoinActivity extends BaseActivity {
 
 
     private Observable<String> joinObserver() {
+
         return Observable.just("Left-").join(createObserver(),
                 integer -> Observable.timer(3000, TimeUnit.MILLISECONDS),
                 integer -> Observable.timer(2000, TimeUnit.MILLISECONDS),

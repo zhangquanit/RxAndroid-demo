@@ -118,7 +118,7 @@ public class RepeatAndTimerActivity extends BaseActivity {
                     public Observable<?> call(Observable<? extends Void> completed) {
                         System.out.println("repeatWhen....completed=" + completed);
                         /**
-                         直到notificationHandler发送onNext()才会重订阅到source。因为在发送onNext()之前delay了一段时间，
+                         至到notificationHandler发送onNext()才会重订阅到source。因为在发送onNext()之前delay了一段时间，
                          所以优雅的实现了延迟重订阅，从而避免了不间断的数据轮询。
                          */
                         return completed.delay(3, TimeUnit.SECONDS);

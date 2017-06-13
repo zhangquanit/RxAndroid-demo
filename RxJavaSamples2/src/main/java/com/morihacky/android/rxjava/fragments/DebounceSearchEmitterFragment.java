@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,7 +30,6 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.DisposableObserver;
 import timber.log.Timber;
 
-import static co.kaush.core.util.CoreNullnessUtils.isNotNullOrEmpty;
 import static java.lang.String.format;
 
 public class DebounceSearchEmitterFragment
@@ -73,7 +73,8 @@ public class DebounceSearchEmitterFragment
 
         _disposable = RxJavaInterop.toV2Observable(RxTextView.textChangeEvents(_inputSearchText))
               .debounce(400, TimeUnit.MILLISECONDS)// default Scheduler is Computation
-              .filter(changes -> isNotNullOrEmpty(_inputSearchText.getText().toString()))
+//              .filter(changes -> isNotNullOrEmpty(_inputSearchText.getText().toString()))
+                .filter(changes -> !TextUtils.isEmpty(_inputSearchText.getText().toString()))
               .observeOn(AndroidSchedulers.mainThread())
               .subscribeWith(_getSearchObserver());
     }

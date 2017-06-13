@@ -10,9 +10,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
 /**
-
-
-
+ *  背压测试
  */
 public class BackPressureTest {
 

@@ -1,0 +1,133 @@
+observeOn(scheduler)
+
+----------------------------------------------------
+    public final Observable<T> observeOn(Scheduler scheduler) {
+        return observeOn(scheduler, RxRingBuffer.SIZE);
+    }
+    public final Observable<T> observeOn(Scheduler scheduler, int bufferSize) {
+        return observeOn(scheduler, false, bufferSize);
+    }
+    public final Observable<T> observeOn(Scheduler scheduler, boolean delayError, int bufferSize) {
+        if (this instanceof ScalarSynchronousObservable) {
+            return ((ScalarSynchronousObservable<T>)this).scalarScheduleOn(scheduler);
+        }
+        return lift(new OperatorObserveOn<T>(scheduler, delayError, bufferSize));
+    }
+    public final <R> Observable<R> lift(final Operator<? extends R, ? super T> operator) {
+        return unsafeCreate(new OnSubscribeLift<T, R>(onSubscribe, operator));
+    }
+
+ //call方法里面调用operator返回的代理subscriber，然后调用onSubscribe.call(代理的subscriber)
+public final class OnSubscribeLift<T, R> implements OnSubscribe<R> {
+
+    final OnSubscribe<T> parent;
+
+    final Operator<? extends R, ? super T> operator;
+
+    public OnSubscribeLift(OnSubscribe<T> parent, Operator<? extends R, ? super T> operator) {
+        this.parent = parent;
+        this.operator = operator;
+    }
+
+    @Override
+    public void call(Subscriber<? super R> o) {
+        try {
+            Subscriber<? super T> st = operator.call(o); //operator返回一个包装的Subscriber
+            try {
+                st.onStart();
+                parent.call(st); //st.onNext,st.onCompleted(),st.onError(e) 回调到ObserveOnSubscriber中
+            } catch (Throwable e) {
+                Exceptions.throwIfFatal(e);
+                st.onError(e);
+            }
+        } catch (Throwable e) {
+            Exceptions.throwIfFatal(e);
+            o.onError(e);
+        }
+    }
+}
+
+
+OperatorObserveOn.call() 返回一个包装subscriber的ObserveOnSubscriber
+    @Override
+    public Subscriber<? super T> call(Subscriber<? super T> child) {
+
+        if (scheduler instanceof ImmediateScheduler) {
+            return child;
+        } else if (scheduler instanceof TrampolineScheduler) {
+            return child;
+        } else {
+            ObserveOnSubscriber<T> parent = new ObserveOnSubscriber<T>(scheduler, child, delayError, bufferSize);
+            parent.init();
+            return parent;
+        }
+    }
+
+
+
+
+举个例子
+Observable.create(onSubscribe)
+.observeOn(Schedulers.newThread())
+.subscribe(subscriber);
+
+1、observeOn(scheduler)
+->lift(new OperatorObserveOn<T>(scheduler))
+->new Observable<T>(new OnSubscribeLift<T, R>(onSubscribe, operator))
+
+2、subscribe(subscriber)
+->OnSubscribeLift.call(subscriber)
+    final OnSubscribe<T> parent;
+    final Operator<? extends R, ? super T> operator;
+    @Override
+    public void call(Subscriber<? super R> o) {
+        Subscriber<? super T> st = operator.call(o); //operator返回一个包装的ObserveOnSubscriber
+        st.onStart();
+        parent.call(st); //回调到ObserveOnSubscriber中onNext,onCompleted(),onError(e)
+    }
+
+ ObserveOnSubscriber.java
+ 将发射的数据存放到queue队列中，并根据背压策略取出数据，发射给实际的subscriber
+        @Override
+        public void onNext(final T t) {
+            if (isUnsubscribed() || finished) {
+                return;
+            }
+            if (!queue.offer(on.next(t))) {
+                onError(new MissingBackpressureException());
+                return;
+            }
+            schedule();
+        }
+
+        @Override
+        public void onCompleted() {
+            if (isUnsubscribed() || finished) {
+                return;
+            }
+            finished = true;
+            schedule();
+        }
+
+        @Override
+        public void onError(final Throwable e) {
+            if (isUnsubscribed() || finished) {
+                RxJavaPlugins.getInstance().getErrorHandler().handleError(e);
+                return;
+            }
+            error = e;
+            finished = true;
+            schedule();
+        }
+
+        @Override
+        public void call() { //scheduler线程中调用
+
+            for (;;) {
+
+                while (requestAmount != currentEmission) {
+                    Object v = q.poll();
+                    localChild.onNext(localOn.getValue(v)); //发射给实际的subscriber
+                 }
+            }
+        }
