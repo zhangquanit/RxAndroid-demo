@@ -10,12 +10,16 @@ import com.rxandroid.demo.rxjava.BehaviorSubjectTest;
 import com.rxandroid.demo.rxjava.OperaterTest;
 
 import rx.Observable;
+import rx.Observer;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
 public class MainActivity extends Activity {
-  Bitmap bitmap=null;
+    Bitmap bitmap = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,12 +28,59 @@ public class MainActivity extends Activity {
         findViewById(R.id.button_run_scheduler).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                test();
+//                test();
+                exceptionTest();
             }
         });
 
-        bitmap= BitmapFactory.decodeResource(getResources(),R.mipmap.ic_launcher);
+        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
 
+    }
+
+    private void exceptionTest() {
+        Thread.setDefaultUncaughtExceptionHandler(new MyCrashHandler());
+        Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                subscriber.onNext("a");
+            }
+        })
+                .observeOn(Schedulers.io())
+                .doOnNext(new Action1<String>() {
+            @Override
+            public void call(String s) {
+                System.out.println("call "+Thread.currentThread().getName());
+                Integer.valueOf(s);
+            }
+        })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("onError "+Thread.currentThread().getName());
+//                        throw  (RuntimeException)e;
+                        Thread.getDefaultUncaughtExceptionHandler().uncaughtException(Thread.currentThread(),e);
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        System.out.println("onNext " + s);
+                    }
+                });
+    }
+
+    public class MyCrashHandler implements Thread.UncaughtExceptionHandler{
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            e.printStackTrace();
+            System.out.println("uncaughtException");
+        }
     }
 
     BehaviorSubjectTest subjectTest = new BehaviorSubjectTest();
@@ -76,9 +127,11 @@ public class MainActivity extends Activity {
 
     }
 
+
     Subscription subscription;
 
     private void fun() {
+
         Observable<Integer> observable1 = Observable.create(new Observable.OnSubscribe<Integer>() {
             @Override
             public void call(Subscriber<? super Integer> subscriber) {
@@ -90,7 +143,7 @@ public class MainActivity extends Activity {
                 }
                 System.out.println("111 开始执行");
                 subscriber.onNext(1);
-                    //
+                //
                 subscriber.onCompleted();
                 System.out.println("111 执行完毕");
             }
@@ -126,14 +179,18 @@ public class MainActivity extends Activity {
                 System.out.println("333 执行完毕");
             }
         }).subscribeOn(Schedulers.io());
-//        Observable.concat(observable1,observable2,observable3)
-//                .subscribe(new Action1<Integer>() {
-//                    @Override
-//                    public void call(Integer integer) {
-//                        System.out.println(integer);
-//                    }
-//                });
 
+
+        Observable.concat(observable1, observable2, observable3)
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(integer);
+                    }
+                });
+
+
+//
 //        Observable.merge(observable1, observable2, observable3)
 //                .subscribe(new Subscriber<Integer>() {
 //                    @Override
@@ -166,7 +223,6 @@ public class MainActivity extends Activity {
 //        });
 
 
-
         subscription = Observable.create(new Observable.OnSubscribe<Integer>() {
             @Override
             public void call(final Subscriber<? super Integer> subscriber) {
@@ -184,7 +240,7 @@ public class MainActivity extends Activity {
             }
         })
 
-        .subscribeOn(Schedulers.newThread())
+                .subscribeOn(Schedulers.newThread())
                 .observeOn(Schedulers.io())
 //                .doOnNext(new Action1<Integer>() {
 //                    @Override
@@ -201,12 +257,12 @@ public class MainActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                      System.out.println("onError");
+                        System.out.println("onError");
                     }
 
                     @Override
                     public void onNext(Integer integer) {
-                        System.out.println("onNext  "+integer+" "+Thread.currentThread().getName());
+                        System.out.println("onNext  " + integer + " " + Thread.currentThread().getName());
                     }
                 });
 
@@ -236,7 +292,7 @@ public class MainActivity extends Activity {
 
                     @Override
                     public void onNext(Integer integer) {
-                        System.out.println("onNext  "+integer+" "+Thread.currentThread().getName());
+                        System.out.println("onNext  " + integer + " " + Thread.currentThread().getName());
                     }
                 });
 
@@ -250,9 +306,6 @@ public class MainActivity extends Activity {
 //                subscription.unsubscribe();
 //            }
 //        },500);
-
-
-
 
 
 //
@@ -284,13 +337,12 @@ public class MainActivity extends Activity {
 //        },1000);
 
 
-
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(null!=subscription&&!subscription.isUnsubscribed()){
+        if (null != subscription && !subscription.isUnsubscribed()) {
             System.out.println("onDestroy unsubscribe");
             subscription.unsubscribe();
         }

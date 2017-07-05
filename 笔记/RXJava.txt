@@ -188,8 +188,85 @@ OnSubscribeXX ：发射数据源，内部一般还持有一个Producer，subscri
     onSubscribeFromArray：
 
 
+------------------Subject
+RxJava中常见的几种Subject
+http://blog.csdn.net/dbs1215/article/details/52444196
+PublishSubject、BehaviorSubject、ReplaySubject、AsyncSubject、SerializedSubject。
+1、PublishSubject
+订阅者只会接受订阅之后的来自PublishSubject发射的数据。
+PublishSubject<Object> subject = PublishSubject.create();
 
+  // observer1 will receive all onNext and onCompleted events
+  subject.subscribe(observer1);
+  subject.onNext("one");
+  subject.onNext("two");
 
+  // observer2 will only receive "three" and onCompleted
+  subject.subscribe(observer2);
+  subject.onNext("three");
+  subject.onCompleted();
+2、BehaviorSubject
+BehaviorSubject会发送订阅之前的上一个值和之后的值
+// observer will receive all events.
+  BehaviorSubject<Object> subject = BehaviorSubject.create("default");
+  subject.subscribe(observer); //接收到之后所有的onNext
+  subject.onNext("one");
+  subject.onNext("two");
+  subject.onNext("three");
+
+  // observer will receive the "one", "two" and "three" events, but not "zero"
+  BehaviorSubject<Object> subject = BehaviorSubject.create("default");
+  subject.onNext("zero");
+  subject.onNext("one");
+  subject.subscribe(observer); //接收到最近发送的one和之后的two、three
+  subject.onNext("two");
+  subject.onNext("three");
+
+  // observer will receive only onCompleted
+  BehaviorSubject<Object> subject = BehaviorSubject.create("default");
+  subject.onNext("zero");
+  subject.onNext("one");
+  subject.onCompleted();
+  subject.subscribe(observer); //接收到最近的onCompleted
+
+  // observer will receive only onError
+  BehaviorSubject<Object> subject = BehaviorSubject.create("default");
+  subject.onNext("zero");
+  subject.onNext("one");
+  subject.onError(new RuntimeException("error"));
+  subject.subscribe(observer); //接收到最近的onError
+3、ReplaySubject
+该Subject会缓存所有的发射数据，无论观察者何时订阅，Subject都会将所有内容发送给订阅者。
+ ReplaySubject<Object> subject = ReplaySubject.create();
+  subject.onNext("one");
+  subject.onNext("two");
+  subject.onNext("three");
+  subject.onCompleted();
+
+  // observable1和observable2会接收到之前发射的所有onNext和onCompleted事件
+  subject.subscribe(observer1);
+  subject.subscribe(observer2);
+4、AsyncSubject
+概括的讲就是使用AsyncSubject无论发送多少个数据事件，观察者永远只能接受到最后一个数据(必须调用onComplete)。如果发送数据过程中出现错误，观察者仅仅接受到错误信息。
+// observer will receive no onNext events because the subject.onCompleted() isn't called.
+  AsyncSubject<Object> subject = AsyncSubject.create();
+  subject.subscribe(observer);
+  subject.onNext("one");
+  subject.onNext("two");
+  subject.onNext("three"); //没有调用onComplete，所有不会接收到任何事件
+
+  // observer will receive "three" as the only onNext event.
+  AsyncSubject<Object> subject = AsyncSubject.create();
+  subject.subscribe(observer);
+  subject.onNext("one");
+  subject.onNext("two");
+  subject.onNext("three");
+  subject.onCompleted(); //调用了onCompleted，可以接收到最后一次发射的onNext
+
+5、SerializedSubject
+Wraps a Subject so that it is safe to call its various on methods from different threads.
+在多线程环境下，调用subject的onXX()是不安全的，SerializedSubject可将一个Subject转换为线程安全的。
+SerializedSubject safeSubject = new SerializedSubject( myUnsafeSubject );
 
 
 

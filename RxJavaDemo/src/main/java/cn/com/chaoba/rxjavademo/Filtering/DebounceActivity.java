@@ -65,7 +65,7 @@ public class DebounceActivity extends BaseActivity {
 
     /**
      * 发射间隔小于timeout的数据会被过滤掉
-     * 设定的过滤时间是200毫秒，也就说发射间隔小于200毫秒的数据会被过滤掉。
+     *
      *
      * @return
      */
@@ -77,10 +77,11 @@ public class DebounceActivity extends BaseActivity {
 
     /**
      * debounce使用时间来进行过滤，这时它跟throttleWithTimeOut使用起来是一样
-     *
+     * 只发射200毫秒内最后发射的数据
      * @return
      */
     private Observable<Integer> debounceWithTimeoutObserver() {
+        // 0 3 6 9
         return createObserver().debounce(200, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread());
     }
