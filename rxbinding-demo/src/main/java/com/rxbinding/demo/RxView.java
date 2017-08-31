@@ -17,6 +17,7 @@ public class RxView {
      */
     public static ViewClickObservable clicks(@NonNull View view) {
         checkNotNull(view, "view == null");
+        System.out.println("RxView改变");
         return new ViewClickObservable(view);
 
     }
