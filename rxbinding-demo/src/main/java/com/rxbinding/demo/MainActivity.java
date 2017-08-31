@@ -81,10 +81,11 @@ public class MainActivity extends Activity {
 //        onEndTest();
 //        takeUtilWhileTest();
 //        doTermTest();
-//        doCompleteTest();
+//        doCompleeTest();
 
 //        switchMapTest();
         doOnTest();
+
 //        mergeTest();
 //        publishTest();
 //        onTerminateDetachTest();
@@ -157,6 +158,8 @@ public class MainActivity extends Activity {
 //                        System.out.println("onError " + throwable.getMessage());
 //                    }
 //                });
+
+        System.out.println("MainActivity修改2");
 
     }
 
