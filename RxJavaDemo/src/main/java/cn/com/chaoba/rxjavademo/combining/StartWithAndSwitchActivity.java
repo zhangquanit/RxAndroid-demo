@@ -18,8 +18,14 @@ public class StartWithAndSwitchActivity extends BaseActivity {
         mRButton.setOnClickListener(e -> switchObserver().subscribe(i -> log("switch:" + i)));
     }
 
+    /**
+     * startWith(T1,T2)
+     * 在observable发射数据前，先发射T1,T2
+     *
+     * @return
+     */
     private Observable<Integer> startWithObserver() {
-        return Observable.just(1, 2, 3).startWith(-1, 0);
+        return Observable.just(1, 2, 3).startWith(-1, 0); //-1,0,1,2,3
     }
 
     private Observable<String> switchObserver() {

@@ -15,11 +15,6 @@ public abstract class RxBindingObservable<T> extends Observable<T> {
         protected LambdaObserver lambdaObserver;
     private Observer<? super T> wrappedObserver;
 
-    @Override
-    public void subscribe(Observer<? super T> observer) {
-        super.subscribe(observer);
-        System.out.println("subscribesubscribesubscribesubscribe " + observer);
-    }
 
     @Override
     protected void subscribeActual(Observer<? super T> observer) {

@@ -12,16 +12,24 @@
  */
 package io.reactivex.internal.schedulers;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.reactivex.Scheduler;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.*;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.internal.disposables.EmptyDisposable;
 import io.reactivex.plugins.RxJavaPlugins;
 
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
+ * SingleScheduler ：只包含1条线程
  * A scheduler with a shared, single threaded underlying ScheduledExecutorService.
  * @since 2.0
  */
@@ -61,6 +69,7 @@ public final class SingleScheduler extends Scheduler {
         executor.lazySet(createExecutor(threadFactory));
     }
 
+    //创建一个具有1个线程的ScheduledExecutorService
     static ScheduledExecutorService createExecutor(ThreadFactory threadFactory) {
         return SchedulerPoolFactory.create(threadFactory);
     }
@@ -70,18 +79,25 @@ public final class SingleScheduler extends Scheduler {
         ScheduledExecutorService next = null;
         for (;;) {
             ScheduledExecutorService current = executor.get();
+            System.out.println("111 current=" + current);
             if (current != SHUTDOWN) {
+                System.out.println("222 ");
                 if (next != null) {
                     next.shutdown();
+                    System.out.println("333 ");
                 }
                 return;
             }
             if (next == null) {
+                System.out.println("4444 ");
                 next = createExecutor(threadFactory);
             }
+            System.out.println("5555 ");
             if (executor.compareAndSet(current, next)) {
+                System.out.println("6666 ");
                 return;
             }
+            System.out.println("77777 ");
 
         }
     }
@@ -90,7 +106,7 @@ public final class SingleScheduler extends Scheduler {
     public void shutdown() {
         ScheduledExecutorService current = executor.get();
         if (current != SHUTDOWN) {
-            current = executor.getAndSet(SHUTDOWN);
+            current = executor.getAndSet(SHUTDOWN); // 重置为SHUTDOWN
             if (current != SHUTDOWN) {
                 current.shutdownNow();
             }

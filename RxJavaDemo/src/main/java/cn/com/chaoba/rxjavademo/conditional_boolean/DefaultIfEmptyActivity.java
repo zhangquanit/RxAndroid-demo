@@ -17,10 +17,17 @@ public class DefaultIfEmptyActivity extends BaseActivity {
         mRButton.setOnClickListener(e -> notEmptyObserver().subscribe(i -> log("notEmpty:" + i)));
     }
 
+    /**
+     * defaultIfEmpty(T)
+     * 如果源Observable没有发射过数据（未调用onNext），则发射T
+     *
+     * @return
+     */
     private Observable<Integer> emptyObserver() {
         return Observable.create(new Observable.OnSubscribe<Integer>() {
             @Override
             public void call(Subscriber<? super Integer> subscriber) {
+                //无数据发射，未调用onNext
                 subscriber.onCompleted();
             }
         }).defaultIfEmpty(10);
@@ -30,7 +37,7 @@ public class DefaultIfEmptyActivity extends BaseActivity {
         return Observable.create(new Observable.OnSubscribe<Integer>() {
             @Override
             public void call(Subscriber<? super Integer> subscriber) {
-                subscriber.onNext(1);
+                subscriber.onNext(1); //有数据发射，则不会发射defaultIfEmpty(T)中的参数T
                 subscriber.onCompleted();
             }
         }).defaultIfEmpty(10);

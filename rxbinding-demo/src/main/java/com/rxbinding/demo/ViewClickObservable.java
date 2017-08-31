@@ -2,50 +2,29 @@ package com.rxbinding.demo;
 
 import android.view.View;
 
-import io.reactivex.Observer;
+import java.util.concurrent.TimeUnit;
 
-import static com.rxbinding.demo.Preconditions.checkMainThread;
-
-public class ViewClickObservable extends RxBindingObservable<Object> {
-    private View view;
+public class ViewClickObservable extends RxViewObservable<Object> {
+    private static final Object DATA = new Object();
 
     public ViewClickObservable(View view) {
-        this.view = view;
+        super(view);
     }
-    public  void setView(View view){
-        this.view=view;
-    }
-
 
     @Override
-    protected void addListener(final Observer observer) {
-        if (!checkMainThread(observer)) {
-            return;
-        }
-        Listener listener = new Listener(view, observer);
-        observer.onSubscribe(listener);
-        view.setOnClickListener(listener);
-    }
-
-    static final class Listener extends io.reactivex.android.MainThreadDisposable implements View.OnClickListener {
-        private final View view;
-        private final Observer<? super Object> observer;
-
-        Listener(View view, Observer<? super Object> observer) {
-            this.view = view;
-            this.observer = observer;
-        }
-
-        @Override
-        public void onClick(View v) {
-            if (!isDisposed()) {
-                observer.onNext(Notification.INSTANCE);
+    void addViewListener(View view) {
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPublisher.onNext(DATA);
             }
-        }
-
-        @Override
-        protected void onDispose() {
-//            view.setOnClickListener(null);
-        }
+        });
     }
+
+    public RxViewObservable<Object> throttleFirst(long windowDuration, TimeUnit unit) {
+        mObservable = mObservable.throttleFirst(windowDuration, unit);
+        return this;
+    }
+
+
 }

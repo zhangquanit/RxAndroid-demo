@@ -1,0 +1,183 @@
+amb:
+amb操作符对于给定两个或多个Observables，它只发射首先发射数据或通知的那个Observable的所有数据。
+
+buffer：
+能一次性集齐多个结果到列表中
+
+cast：
+转换成指定类型，RXBus中可能用到
+
+combineLatest
+合并多个observable最近发射的数据，RxLifeCycle中用到
+
+XXDelayError
+在进行一些合并操作时,如果碰到某个Observable发送了Error事件,则操作就会终止.
+果需要先暂时忽略错误,将相应的操作进行完后再将发送Error事件,测可以用该方法对应的DelayError版本的方法.
+比如：combineLatestDelayError,concatDelayError, mergeDelayError, concatMapDelayError, switchMapDelayError, switchOnNextDelayError.
+
+compose(transformer)
+结合transformer，能够拿到原始Observable，统一给Observable添加操作符，达到复用的目的。
+
+concat(observables....);
+顺序发射多个Observable的数据给订阅者
+concatDelayError
+先暂时忽略错误,将相应的操作进行完后再将发送Error事件
+concatMap
+可以理解成有序的flatMap，flatMap是不保证顺序的
+
+debounce(long timeout, TimeUnit unit)  等同于 throttleWithTimeout(long timeout, TimeUnit unit)
+只发射timeout时间段内最后一次发射的数据
+
+defaultIfEmpty(T defaultItem)
+如果源Observable没有发射数据(即调用onNext),则发射defaultItem
+switchIfEmpty(ObservableSource<? extends T> other)
+如果源Observable没有发射数据(即调用onNext),则调用other发射数据
+
+delay(long delay, TimeUnit unit)
+延迟多长时间将onNext的数据发送给订阅者
+delaySubscription(long delay, TimeUnit unit)
+延迟多长时间调用subscribe
+
+doXX
+支持在subscribe、onNext、onComplete、onError之前或之后进行操作
+一个正常的流程如下：
+doOnSubscribe->onSubscribe->doOnEach->doOnNext->onNext->doAfterNext
+->doOnEach->doOnComplete->doOnTerminate->onComplete->doFinally->doAfterTerminate
+一个onError的流程如下：
+doOnSubscribe->onSubscribe->doOnEach->doOnNext->onNext->doAfterNext
+->doOnEach->doOnTerminate->onError->doFinally->doAfterTerminate
+
+备注：
+doOnEach：会在onNext、onError、onComplete每步之前调用
+doAfterTerminate：在onComplete或onError之后调用
+doFinally：onError or onCompleted or gets disposed 之后调用，只会执行一次
+
+filter(Predicate<? super T> predicate)
+发射的数据会先进行filter过滤，只有满足条件的才会发送给订阅者
+
+flatMap
+将源Observable发射的数据转换为一个Observable,再将转换后的Observable的数据发射给订阅者
+
+fromArray(T... items)
+连续发射items给订阅者
+fromIterable(Iterable<? extends T> source);
+将集合类的数据连续发射给订阅者
+
+hide
+隐藏当前Observable及其Disposable的身份
+
+interval(long initialDelay, long period, TimeUnit unit)
+类似定时器作用，延迟initialDelay，每隔period时间发射从0开始的数字,0，1，2,..........
+
+just(T item)
+just(T item1, T... items)
+发射item
+与from(items)的区别：just是将集合作为一个整体发射的，而from是依次发射集合中的数据
+
+map(Function<? super T, ? extends R> mapper)
+源Observable发射的数据T会通过Function转换为R后，发射给订阅者
+
+merge(observables)
+并发执行多个Observable，订阅者会接收到所有Observable发射的数据
+
+observeOn(Scheduler scheduler)
+指定下一步消费操作发生在什么线程
+
+ofType(final Class<U> clazz)
+等价于filter+cast
+发射的数据为Class<U>类型，则转换为该类型后发射给订阅者
+
+onErrorResumeNext(final ObservableSource<? extends T> next)
+源Observable出现Error时调用另外一个next数据源发射数据
+onExceptionResumeNext(final ObservableSource<? extends T> next)
+与onErrorResumeNext类似，不过只支持Exception
+onErrorReturnItem(final T item)
+源Observable出现Error时发射item给调用者
+
+onTerminateDetach
+当数据发射完毕或订阅者调用了dispose，断开上游Observable和下游Observer之间的引用关系，有效避免内存溢出
+注意：不支持Scheduler线程切换
+
+publish
+share
+refcount
+http://blog.csdn.net/jdsjlzx/article/details/53365839
+
+repeat()
+无限循环
+repeat(long times)
+循环指定次数
+repeatUntil(BooleanSupplier stop)
+一直循环除非stop为true
+repeatWhen(final Function<? super Observable<Object>, ? extends ObservableSource<?>> handler)
+
+备注：
+repeat操作符就是对某一个Observable重复产生多次结果,当repeat() 接收到onComplete()会触发重订阅，默认情况下运行在一个新的线程上
+
+retry
+无限重试
+retry(BiPredicate<? super Integer, ? super Throwable> predicate)
+满足predicate条件时重试
+retry(long times)
+重试times次数
+retry(long times, Predicate<? super Throwable> predicate)
+重试times次数，每次是否执行需要满足predicate条件
+retry(Predicate<? super Throwable> predicate)
+retryUntil(final BooleanSupplier stop)
+一直重试 除非stop为true
+retryWhen(final Function<? super Observable<Throwable>, ? extends ObservableSource<?>> handler)
+
+备注：
+retry()接收到.onError()事件后触发重订阅。默认情况下运行在一个新的线程上
+
+safeSubscribe(Observer<? super T> s)
+将s包装被SafeObserver后订阅
+
+sample(long period, TimeUnit unit)
+发射源Observable指定时间段内最近发射的数据，其余的都会被丢弃
+
+serialize
+强制Observable按次序发射数据并且要求功能是完好的
+
+skip(long count)
+丢弃Observable发射的前count个数据
+
+startWith(T item)
+先发射item，再发射源Observable，其实就是 contact(item，observable)
+
+subscribe(observer)
+订阅
+
+subscribeOn(Scheduler scheduler)
+指定subscribe()发生在指定线程
+
+switchIfEmpty(ObservableSource<? extends T> other)
+当源Observable无数据发射时(没有调用OnNext，直接调用onComplete)，调用other发射数据给订阅者
+
+take(long count)
+只取前count个数据
+takeUntil(ObservableSource<U> other)
+只有other发射至少一个数据时，源Observable才开始发射数据
+
+throttleFirst(long windowDuration, TimeUnit unit)
+发射源Observable在指定时间段内发射的第一个数据
+throttleLast(long intervalDuration, TimeUnit unit)
+发射源Observable在指定时间段内发射的最后一个数据
+
+throttleWithTimeout(long timeout, TimeUnit unit)
+发射间隔小于指定时间的数据会被过滤掉
+
+unsubscribeOn(Scheduler scheduler)
+指定dispose发生的线程
+
+window
+Window操作符类似于我们前面讲过的buffer，不同之处在于window发射的是一些小的Observable对象，由这些小的Observable对象来发射内部包含的数据。
+
+withLatestFrom(Observable other,BiFunction function)
+与combineLatest类似,源Observable发射的数据与other最近发射的数据，通过function合并后 将结果发送给订阅者
+
+wrap(ObservableSource<T> source)
+将source包装成Observable
+
+zip
+并发执行多个Observable，并将结果合并后发射给订阅者

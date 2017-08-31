@@ -16,12 +16,18 @@ public class SequenceEqualActivity extends BaseActivity {
         mRButton.setOnClickListener(e -> notEqualObserver().subscribe(i -> log("notequal:" + i)));
     }
 
+    /**
+     * sequenceEqual(observable1,observable2)
+     * 比较observable1、observable2发射的数据顺序是否一样
+     *
+     * @return
+     */
     private Observable<Boolean> equalObserver() {
-        return Observable.sequenceEqual(Observable.just(1, 2, 3), Observable.just(1, 2, 3));
+        return Observable.sequenceEqual(Observable.just(1, 2, 3), Observable.just(1, 2, 3)); //true
     }
 
     private Observable<Boolean> notEqualObserver() {
-        return Observable.sequenceEqual(Observable.just(1, 2, 3), Observable.just(1, 2));
+        return Observable.sequenceEqual(Observable.just(1, 2, 3), Observable.just(1, 2)); //false
     }
 }
 

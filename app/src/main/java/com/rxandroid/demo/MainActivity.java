@@ -15,6 +15,7 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 public class MainActivity extends Activity {
@@ -29,7 +30,9 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
 //                test();
-                exceptionTest();
+//                exceptionTest();
+//                zipTest();
+                backpressureTest();
             }
         });
 
@@ -47,12 +50,12 @@ public class MainActivity extends Activity {
         })
                 .observeOn(Schedulers.io())
                 .doOnNext(new Action1<String>() {
-            @Override
-            public void call(String s) {
-                System.out.println("call "+Thread.currentThread().getName());
-                Integer.valueOf(s);
-            }
-        })
+                    @Override
+                    public void call(String s) {
+                        System.out.println("call " + Thread.currentThread().getName());
+                        Integer.valueOf(s);
+                    }
+                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<String>() {
                     @Override
@@ -62,9 +65,9 @@ public class MainActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                        System.out.println("onError "+Thread.currentThread().getName());
+                        System.out.println("onError " + Thread.currentThread().getName());
 //                        throw  (RuntimeException)e;
-                        Thread.getDefaultUncaughtExceptionHandler().uncaughtException(Thread.currentThread(),e);
+                        Thread.getDefaultUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
                     }
 
                     @Override
@@ -74,7 +77,7 @@ public class MainActivity extends Activity {
                 });
     }
 
-    public class MyCrashHandler implements Thread.UncaughtExceptionHandler{
+    public class MyCrashHandler implements Thread.UncaughtExceptionHandler {
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
@@ -338,6 +341,96 @@ public class MainActivity extends Activity {
 
 
     }
+
+    private void zipTest() {
+        Observable<String> observable1 = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                try {
+
+                    for (int i = 0; i < 10; i++) {
+                        System.out.println("observable1 发射 " + i);
+                        subscriber.onNext("no1-" + i);
+                        Thread.sleep(1 * 1000);
+
+                    }
+                    subscriber.onCompleted();
+                    System.out.println("observable1...onComplete");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).subscribeOn(Schedulers.io());
+
+        Observable<String> observable2 = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                try {
+                    for (int i = 0; i < 4; i++) {
+                        System.out.println("observable2 发射 " + i);
+                        subscriber.onNext("no2-" + i);
+                        Thread.sleep(2 * 1000);
+
+                    }
+                    subscriber.onCompleted();
+                    System.out.println("observable2...onComplete");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).subscribeOn(Schedulers.io());
+
+        Observable.zip(observable1, observable2, new Func2<String, String, String>() {
+            @Override
+            public String call(String s, String s2) {
+                return s + "&" + s2;
+            }
+        })
+                .subscribe(new Subscriber<String>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("onError");
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        System.out.println("onNext s=" + s);
+                    }
+                });
+
+    }
+
+    private void backpressureTest() {
+        Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                for (int i = 0; i < 16; i++) {
+                    subscriber.onNext(i);
+                }
+                subscriber.onCompleted();
+            }
+        }).subscribeOn(Schedulers.io()) //事件产生和消费在不同io线程中
+                .observeOn(Schedulers.io())
+                .subscribe(new Action1<Integer>() {
+
+                    @Override
+                    public void call(Integer integer) {
+                        try {
+                            //休眠2000毫秒，模拟事件消费速度
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                });
+    }
+
 
     @Override
     protected void onDestroy() {

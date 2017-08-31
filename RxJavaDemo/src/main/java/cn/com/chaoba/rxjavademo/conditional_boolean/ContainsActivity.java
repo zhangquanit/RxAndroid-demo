@@ -18,6 +18,11 @@ public class ContainsActivity extends BaseActivity {
         mRButton.setOnClickListener(e -> defaultObserver().subscribe(i -> log("isEmpty:" + i)));
     }
 
+    /**
+     * 发射的数据中是否包含某个数据
+     *
+     * @return
+     */
     private Observable<Boolean> containsObserver() {
         if (tag) {
             return Observable.just(1, 2, 3).contains(3);
@@ -26,10 +31,16 @@ public class ContainsActivity extends BaseActivity {
         return Observable.just(1, 2, 3).contains(4);
     }
 
+    /**
+     * isEmpty
+     * 源Observabe是否发射了数据，如果没有调用onNext，则返回true
+     * @return
+     */
     private Observable<Boolean> defaultObserver() {
         return Observable.create(new Observable.OnSubscribe<Integer>() {
             @Override
             public void call(Subscriber<? super Integer> subscriber) {
+//                subscriber.onNext(1);
                 subscriber.onCompleted();
             }
         }).isEmpty();

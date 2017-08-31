@@ -16,13 +16,20 @@
 
 package io.reactivex.internal.schedulers;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.reactivex.Scheduler;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.*;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.internal.disposables.EmptyDisposable;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Scheduler that creates and caches a set of thread pools and reuses them if possible.
@@ -56,6 +63,7 @@ public final class IoScheduler extends Scheduler {
 
         EVICTOR_THREAD_FACTORY = new RxThreadFactory(EVICTOR_THREAD_NAME_PREFIX, priority);
 
+        //默认线程池
         NONE = new CachedWorkerPool(0, null, WORKER_THREAD_FACTORY);
         NONE.shutdown();
     }
@@ -74,6 +82,7 @@ public final class IoScheduler extends Scheduler {
             this.allWorkers = new CompositeDisposable();
             this.threadFactory = threadFactory;
 
+            //创建一个定时线程，定时去检测缓存队列中的线程是否失效
             ScheduledExecutorService evictor = null;
             Future<?> task = null;
             if (unit != null) {
@@ -86,6 +95,7 @@ public final class IoScheduler extends Scheduler {
 
         @Override
         public void run() {
+            //检查
             evictExpiredWorkers();
         }
 
@@ -93,6 +103,7 @@ public final class IoScheduler extends Scheduler {
             if (allWorkers.isDisposed()) {
                 return SHUTDOWN_THREAD_WORKER;
             }
+            //首先充缓存队列中查找，有就返回
             while (!expiringWorkerQueue.isEmpty()) {
                 ThreadWorker threadWorker = expiringWorkerQueue.poll();
                 if (threadWorker != null) {
@@ -100,25 +111,31 @@ public final class IoScheduler extends Scheduler {
                 }
             }
 
-            // No cached worker found, so create a new one.
+            // 如果缓存队列中没有，就新建一个
             ThreadWorker w = new ThreadWorker(threadFactory);
             allWorkers.add(w);
             return w;
         }
 
+        /**
+         * dispose时将threadWorker归还到expiringWorkerQueue
+         */
         void release(ThreadWorker threadWorker) {
-            // Refresh expire time before putting worker back in pool
+            // 设置存活时间
             threadWorker.setExpirationTime(now() + keepAliveTime);
 
             expiringWorkerQueue.offer(threadWorker);
         }
 
+        /**
+         * 将缓存队列中失效的线程移除
+         */
         void evictExpiredWorkers() {
             if (!expiringWorkerQueue.isEmpty()) {
                 long currentTimestamp = now();
 
                 for (ThreadWorker threadWorker : expiringWorkerQueue) {
-                    if (threadWorker.getExpirationTime() <= currentTimestamp) {
+                    if (threadWorker.getExpirationTime() <= currentTimestamp) { //
                         if (expiringWorkerQueue.remove(threadWorker)) {
                             allWorkers.remove(threadWorker);
                         }
@@ -163,7 +180,7 @@ public final class IoScheduler extends Scheduler {
     @Override
     public void start() {
         CachedWorkerPool update = new CachedWorkerPool(KEEP_ALIVE_TIME, KEEP_ALIVE_UNIT, threadFactory);
-        if (!pool.compareAndSet(NONE, update)) {
+        if (!pool.compareAndSet(NONE, update)) { //替换默认线程池
             update.shutdown();
         }
     }
@@ -174,7 +191,7 @@ public final class IoScheduler extends Scheduler {
             if (curr == NONE) {
                 return;
             }
-            if (pool.compareAndSet(curr, NONE)) {
+            if (pool.compareAndSet(curr, NONE)) { //替换为默认线程池
                 curr.shutdown();
                 return;
             }
@@ -194,14 +211,14 @@ public final class IoScheduler extends Scheduler {
     static final class EventLoopWorker extends Scheduler.Worker {
         private final CompositeDisposable tasks;
         private final CachedWorkerPool pool;
-        private final ThreadWorker threadWorker;
+        private final ThreadWorker threadWorker; //负责线程调度，内部是拥有一条线程的ScheduledExecutorService
 
         final AtomicBoolean once = new AtomicBoolean();
 
         EventLoopWorker(CachedWorkerPool pool) {
             this.pool = pool;
             this.tasks = new CompositeDisposable();
-            this.threadWorker = pool.get();
+            this.threadWorker = pool.get(); //首先从缓存线程队列中获取，如果没获取到，则创建一个
         }
 
         @Override
@@ -209,7 +226,7 @@ public final class IoScheduler extends Scheduler {
             if (once.compareAndSet(false, true)) {
                 tasks.dispose();
 
-                // releasing the pool should be the last action
+                // 将threadWorker放入到缓存队列中
                 pool.release(threadWorker);
             }
         }

@@ -15,12 +15,14 @@ package io.reactivex;
 
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.annotations.*;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.Function;
-import io.reactivex.internal.disposables.*;
-import io.reactivex.internal.schedulers.*;
+import io.reactivex.internal.disposables.EmptyDisposable;
+import io.reactivex.internal.disposables.SequentialDisposable;
+import io.reactivex.internal.schedulers.NewThreadWorker;
+import io.reactivex.internal.schedulers.SchedulerWhen;
 import io.reactivex.internal.util.ExceptionHelper;
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -322,6 +324,7 @@ public abstract class Scheduler {
             final long firstNowNanoseconds = now(TimeUnit.NANOSECONDS);
             final long firstStartInNanoseconds = firstNowNanoseconds + unit.toNanos(initialDelay);
 
+            //PeriodicTask
             Disposable d = schedule(new PeriodicTask(firstStartInNanoseconds, decoratedRun, firstNowNanoseconds, sd,
                     periodInNanoseconds), initialDelay, unit);
 
@@ -368,7 +371,8 @@ public abstract class Scheduler {
 
             @Override
             public void run() {
-                decoratedRun.run();
+
+                decoratedRun.run(); //执行实际
 
                 if (!sd.isDisposed()) {
 

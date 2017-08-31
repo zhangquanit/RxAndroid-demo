@@ -16,10 +16,12 @@ package io.reactivex.internal.operators.observable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.reactivex.*;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.Scheduler;
 import io.reactivex.Scheduler.Worker;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.internal.disposables.*;
+import io.reactivex.internal.disposables.DisposableHelper;
 import io.reactivex.internal.schedulers.TrampolineScheduler;
 
 public final class ObservableInterval extends Observable<Long> {
@@ -80,7 +82,7 @@ public final class ObservableInterval extends Observable<Long> {
         @Override
         public void run() {
             if (get() != DisposableHelper.DISPOSED) {
-                actual.onNext(count++);
+                actual.onNext(count++); //在线程中回调actual.onNext()
             }
         }
 

@@ -26,10 +26,19 @@ public class DelayActivity extends BaseActivity {
         });
     }
 
+    /**
+     * 延迟多长时间将onNext的数据发射给订阅者
+     *
+     * @return
+     */
     private Observable<Long> delayObserver() {
         return createObserver(2).delay(2000, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 延迟多长时间subscribe
+     * @return
+     */
     private Observable<Long> delaySubscriptionObserver() {
         return createObserver(2).delaySubscription(2000, TimeUnit.MILLISECONDS);
     }

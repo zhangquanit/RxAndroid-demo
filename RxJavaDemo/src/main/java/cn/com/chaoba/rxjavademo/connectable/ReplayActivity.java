@@ -31,7 +31,7 @@ public class ReplayActivity extends BaseActivity {
             obs = relayCountObserver();
             obs.subscribe(action1);
             log("relayCount");
-            mSubscription = obs.connect();
+            mSubscription = obs.connect(); // 调用Connect操作符开始发射数据
         });
         mRButton.setText("relayTime");
         mRButton.setOnClickListener(e -> {
@@ -42,6 +42,12 @@ public class ReplayActivity extends BaseActivity {
         });
     }
 
+    /**
+     * ConnectableObservable和普通的Observable最大的区别就是，调用Connect操作符开始发射数据，后面的订阅者会丢失之前发射过的数据。
+     * 使用Replay操作符返回的ConnectableObservable 会缓存订阅者订阅之前已经发射的数据，这样即使有订阅者在其发射数据开始之后进行订阅也能收到之前发射过的数据。Replay操作符能指定缓存的大小或者时间，这样能避免耗费太多内存。
+     *
+     * @return
+     */
     private ConnectableObservable<Long> relayCountObserver() {
         Observable<Long> obser = Observable.interval(1, TimeUnit.SECONDS);
         obser.observeOn(Schedulers.newThread());

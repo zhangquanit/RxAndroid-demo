@@ -66,7 +66,7 @@ public class CombineLatestActivity extends BaseActivity {
 
     /**
      * combineLatest(observable1,observable2,func2)
-     * fun2会将observable1和observable2最后发射的数据进行处理后发射给订阅者
+     * fun2会将observable1和observable2最近发射的数据进行处理后发射给订阅者
      * 注意：只有obervable1和observable2都有数据发射过时，才会进入func2，否则会等待另外一个observable发射数据
      */
     private Observable<Integer> combineLatestObserver() {

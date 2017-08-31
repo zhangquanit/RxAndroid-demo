@@ -1,5 +1,8 @@
 
 
+concatMap与flatMap最大的区别是concatMap发射的数据是有序的，而flatMap发射的数据是无序的。
+
+
 Map操作符
  事件对象的直接变换，是一对一的转化
 
