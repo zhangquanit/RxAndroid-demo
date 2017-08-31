@@ -268,7 +268,7 @@ Wraps a Subject so that it is safe to call its various on methods from different
 在多线程环境下，调用subject的onXX()是不安全的，SerializedSubject可将一个Subject转换为线程安全的。
 SerializedSubject safeSubject = new SerializedSubject( myUnsafeSubject );
 
-
+修改记录3
 
 
 
