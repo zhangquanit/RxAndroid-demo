@@ -84,14 +84,14 @@ public class MainActivity extends Activity {
 //        doCompleteTest();
 
 //        switchMapTest();
-//        doOnTest();
+        doOnTest();
 //        mergeTest();
 //        publishTest();
 //        onTerminateDetachTest();
 
 //        rxBindingTest();
 //        justSubscribe();
-        normalTest();
+//        normalTest();
         //监听文字变化
 //        final TextView textView = (TextView) findViewById(R.id.result);
 //        EditText editText = (EditText) findViewById(R.id.et);
@@ -104,6 +104,59 @@ public class MainActivity extends Activity {
 //                    }
 //                });
 //        compositeDisposable.add(subscribe);
+
+
+//        final AlertDialog alertDialog = new AlertDialog.Builder(this)
+//                .setTitle("title")
+//                .setMessage("message")
+//                .setPositiveButton("sure", new DialogInterface.OnClickListener() {
+//                    @Override
+//                    public void onClick(DialogInterface dialog, int which) {
+//
+//                    }
+//                })
+//                .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+//                    @Override
+//                    public void onClick(DialogInterface dialog, int which) {
+//
+//                    }
+//                }).create();
+//
+//        alertDialog.show();
+//        Observable.create(new ObservableOnSubscribe<String>() {
+//            @Override
+//            public void subscribe(@NonNull ObservableEmitter<String> e) throws Exception {
+//                System.out.println("onSubscribe "+Thread.currentThread().getName());
+//                Thread.sleep(5*1000);
+//                alertDialog.dismiss();
+////                finish();
+//                e.onComplete();
+//            }
+//        }).subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .doOnTerminate(new Action() {
+//                    @Override
+//                    public void run() throws Exception {
+//                        System.out.println("doOnTerminate");
+//                    }
+//                })
+//                .doAfterTerminate(new Action() {
+//                    @Override
+//                    public void run() throws Exception {
+//                        System.out.println("doAfterTerminate");
+//                    }
+//                })
+//                .subscribe(new Consumer<String>() {
+//                    @Override
+//                    public void accept(String s) throws Exception {
+//                        System.out.println("onNext " + s);
+//                    }
+//                }, new Consumer<Throwable>() {
+//                    @Override
+//                    public void accept(Throwable throwable) throws Exception {
+//                        System.out.println("onError " + throwable.getMessage());
+//                    }
+//                });
 
     }
 
@@ -327,7 +380,7 @@ public class MainActivity extends Activity {
             public void subscribe(@NonNull ObservableEmitter<Integer> e) throws Exception {
                 e.onNext(1);
                 e.onNext(2);
-//                e.onError(new NullPointerException("this is NullPointerException"));
+                e.onError(new NullPointerException("this is NullPointerException"));
                 e.onComplete();
             }
         })
